@@ -9,7 +9,7 @@
 #define INC_SENSOR_DATA_H_
 
 #define TEMP_THRESHOLD_MAX 30.0f // °C
-#define HUMIDITY_THRESHOLD_MAX 70.0f // %
+#define HUMIDITY_THRESHOLD_MAX 68.0f // %
 
 
 typedef struct{

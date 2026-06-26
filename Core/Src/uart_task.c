@@ -27,7 +27,6 @@ void StartTaskUART(void const * argument){
 
 		if(xQueueReceive(UartQueueHandle, &receivedData, pdMS_TO_TICKS(2000)) == pdTRUE)
 		{
-
 			HAL_UART_Transmit(&huart2, (uint8_t*)receivedData.uart_buffer, strlen(receivedData.uart_buffer), 100);
 		}
 	}
