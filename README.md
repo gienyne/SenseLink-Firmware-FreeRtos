@@ -349,6 +349,11 @@ Example `senselink/cpu` payload:
 ### PuTTY UART debug output
 ![PuTTY UART](https://github.com/gienyne/SenseLink-Firmware-FreeRtos/blob/main/Screenshots/Putty.png)
 
+### Demo
+
+https://github.com/user-attachments/assets/c6a56bb9-8c16-4eff-bb1e-8c196a48b11d
+
+
 ---
 
 ## Design Considerations & System Behavior
