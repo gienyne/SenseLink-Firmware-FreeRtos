@@ -21,7 +21,6 @@
 #include "cmsis_os.h"
 #include "queues.h"
 #include "sensor_data.h"
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -51,10 +50,10 @@ osThreadId TaskSensorHandle;
 osThreadId TaskLCDHandle;
 osThreadId TaskUARTHandle;
 osThreadId TaskAlarmHandle;
-
+/* USER CODE BEGIN PV */
+uint8_t rx_byte = 0;
 osMutexId i2cMutexHandle;
 osMutexDef(i2cMutex);
-/* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
 
@@ -127,17 +126,17 @@ int main(void)
 
   /* Create the queue(s) */
   /* definition and creation of SensorDataQueue */
-  UartQueueHandle  = xQueueCreate(2, sizeof(FormattedData_t));
-  AlarmQueueHandle = xQueueCreate(2, sizeof(SensorData_t));
-  LcdQueueHandle   = xQueueCreate(2, sizeof(FormattedData_t));
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
+  UartQueueHandle  = xQueueCreate(2, sizeof(FormattedData_t));
+  AlarmQueueHandle = xQueueCreate(1, sizeof(SensorData_t));
+  LcdQueueHandle   = xQueueCreate(3, sizeof(FormattedData_t));
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
   /* definition and creation of TaskSensor */
-  osThreadDef(TaskSensor, StartTaskSensor, osPriorityNormal, 0, 192);
+  osThreadDef(TaskSensor, StartTaskSensor, osPriorityNormal, 0, 256);
   TaskSensorHandle = osThreadCreate(osThread(TaskSensor), NULL);
 
   /* definition and creation of TaskLCD */
@@ -145,19 +144,16 @@ int main(void)
   TaskLCDHandle = osThreadCreate(osThread(TaskLCD), NULL);
 
   /* definition and creation of TaskUART */
-  osThreadDef(TaskUART, StartTaskUART, osPriorityNormal, 0, 64);
+  osThreadDef(TaskUART, StartTaskUART, osPriorityNormal, 0, 192);
   TaskUARTHandle = osThreadCreate(osThread(TaskUART), NULL);
 
   /* definition and creation of TaskAlarm */
   osThreadDef(TaskAlarm, StartTaskAlarm, osPriorityNormal, 0, 64);
   TaskAlarmHandle = osThreadCreate(osThread(TaskAlarm), NULL);
-  if(TaskAlarmHandle == NULL){
-          HAL_GPIO_WritePin(GPIOA, LD2_Pin, GPIO_PIN_SET);
-          while(1);
-      }
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
   /* USER CODE END RTOS_THREADS */
 
   /* Start scheduler */
@@ -266,7 +262,6 @@ static void MX_I2C1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN I2C1_Init 2 */
-
   /* USER CODE END I2C1_Init 2 */
 
 }
@@ -302,6 +297,8 @@ static void MX_USART2_UART_Init(void)
   }
   /* USER CODE BEGIN USART2_Init 2 */
 
+  HAL_NVIC_SetPriority(USART2_IRQn, 3, 0);
+  HAL_NVIC_EnableIRQ(USART2_IRQn);
   /* USER CODE END USART2_Init 2 */
 
 }
@@ -357,7 +354,36 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == USART2)
+    {
+        if (rx_byte == 'R')
+        {
+            HAL_GPIO_TogglePin(GPIOA, LD2_Pin);
+
+            reset_request = 1;
+            current_alarm_state = 1;
+        }
+
+        HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
+    }
+}
+
+
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == USART2)
+    {
+        __HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_OREF | UART_CLEAR_NEF | UART_CLEAR_FEF | UART_CLEAR_PEF);
+
+        HAL_UART_Receive_IT(huart, &rx_byte, 1);
+    }
+}
 /* USER CODE END 4 */
+
+/* USER CODE BEGIN Header_StartTaskSensor */
 
 /**
   * @brief  This function is executed in case of error occurrence.

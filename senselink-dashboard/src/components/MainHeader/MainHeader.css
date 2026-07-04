@@ -1,0 +1,34 @@
+main-hdr {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.main-title {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--text);
+}
+
+.main-sub {
+  font-size: 11px;
+  color: var(--subtle);
+  font-family: monospace;
+  margin-top: 3px;
+}
+
+.ts-chip {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 6px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  white-space: nowrap;
+  font-family: monospace;
+  box-shadow: var(--shadow-sm);
+}

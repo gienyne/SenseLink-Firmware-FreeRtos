@@ -1,0 +1,45 @@
+.bot-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.b-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.b-card:hover { box-shadow: var(--shadow-md); transition: box-shadow 0.2s; }
+.b-title { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--subtle); }
+
+.hw-leds { display: flex; justify-content: space-around; align-items: center; gap: 8px; }
+.hw-item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.hw-bulb { width: 34px; height: 34px; border-radius: 50%; background: #e0d8d0; border: 2px solid rgba(0,0,0,0.06); transition: all 0.4s ease; }
+.hw-on   { border-color: transparent; }
+.hw-blink { animation: blink-hw 0.9s infinite; }
+
+@keyframes blink-hw {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.2; }
+}
+
+.hw-name { font-size: 10px; font-weight: 600; color: var(--subtle); letter-spacing: 0.06em; }
+.hw-state { font-size: 10px; font-weight: 600; transition: color 0.3s; }
+
+.sys-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 10px; }
+.sys-k { font-size: 11px; color: var(--muted); }
+.sys-v { font-size: 11px; font-weight: 500; font-family: monospace; }
+
+.cpu-list { display: flex; flex-direction: column; gap: 9px; margin-top: 2px; }
+.cpu-row-item { display: flex; flex-direction: column; gap: 4px; }
+.cpu-meta-info { display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
+.cpu-task-name { font-weight: 600; color: var(--text); font-family: monospace; }
+.cpu-task-val { font-weight: 600; color: var(--muted); font-family: monospace; }
+.cpu-progress-bar-track { width: 100%; height: 5px; background-color: var(--surface2); border-radius: 3px; overflow: hidden; }
+.cpu-progress-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }

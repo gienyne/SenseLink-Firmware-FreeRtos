@@ -61,7 +61,7 @@
 #define configTICK_RATE_HZ                       ((TickType_t)1000)
 #define configMAX_PRIORITIES                     ( 7 )
 #define configMINIMAL_STACK_SIZE                 ((uint16_t)128)
-#define configTOTAL_HEAP_SIZE                    ((size_t)3072)
+#define configTOTAL_HEAP_SIZE                    ((size_t)3972)
 #define configMAX_TASK_NAME_LEN                  ( 16 )
 #define configUSE_16_BIT_TICKS                   0
 #define configUSE_MUTEXES                        1
@@ -100,6 +100,14 @@ standard names. */
 
 /* USER CODE BEGIN Defines */
 /* Section where parameter definitions can be added (for instance, to override default ones in FreeRTOS.h) */
+#define configGENERATE_RUN_TIME_STATS        1
+#define configUSE_TRACE_FACILITY             1
+#define configUSE_STATS_FORMATTING_FUNCTIONS 0
+
+
+#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS()
+
+#define portGET_RUN_TIME_COUNTER_VALUE()            ((uint32_t)xTaskGetTickCount())
 /* USER CODE END Defines */
 
 #endif /* FREERTOS_CONFIG_H */
