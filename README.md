@@ -1,4 +1,4 @@
-# SenseLink — Real-Time IoT Environmental Monitoring Station
+# SenseLink - Real-Time IoT Environmental Monitoring Station
 
 A full-stack embedded IoT project built on an **STM32 Nucleo-F030R8** running **FreeRTOS**, with a Python UART-to-MQTT bridge and a React real-time dashboard.
 
