@@ -351,9 +351,9 @@ Example `senselink/cpu` payload:
 
 ---
 
-## Known Limitations
+## Design Considerations & System Behavior
 
-- The IDLE task consumes ~98% of CPU time, which is the expected and correct behaviour for a well-designed RTOS application where tasks spend most of their time blocked.
+- The IDLE task consumes ~98% of CPU time, which is the expected and normaly correct behaviour for a well-designed RTOS application where tasks spend most of their time blocked.
 - CPU statistics use `xTaskGetTickCount()` as the time base (1 ms resolution). Tasks that execute in under 1 ms per cycle will report 0% or `<1%`.
 - The alarm reset only takes effect when sensor readings have returned to within thresholds. If the environment is still above the threshold when RESET is pressed, the alarm will re-trigger on the next measurement cycle.
 - The LCD queue depth must remain at 3 or higher to prevent display corruption caused by timing jitter on the shared I2C bus.
