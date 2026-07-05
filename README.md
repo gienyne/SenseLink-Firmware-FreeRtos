@@ -45,6 +45,16 @@ running on the STM32F030R8.
 
 ---
 
+---
+
+## Project Highlights & Custom Engineering
+
+* **Custom Bare-Metal LCD Driver (`lcd_i2c.c/.h`)**: Developed a complete, from-scratch HD44780 4-bit display driver interfaced via an I2C PCF8574 I/O expander. No external high-level libraries were used; implemented custom low-level byte-splitting, command registers, and strobe timing configurations directly over STM32 HAL I2C.
+* **Production-Grade Architecture**: Zero use of global variables for data passing between tasks, achieving complete thread safety via strictly typed FreeRTOS queues.
+* **Centralised Formatting**: Designed to format telemetry payloads exactly once (`snprintf` inside `TaskSensor`) before distribution, heavily reducing the stack usage and memory footprint across all other concurrent tasks.
+
+---
+
 ## What This Project Demonstrates
 
 ### FreeRTOS Skills
@@ -372,7 +382,7 @@ SenseLink_Firmware/
 │   ├── Inc/
 │   │   ├── alarm_task.h       # LED pin definitions, alarm task declaration
 │   │   ├── bme280_task.h      # Sensor task declaration
-│   │   ├── lcd_i2c.h          # LCD driver API
+│   │   ├── lcd_i2c.h          # LCD driver API [Custom Implementation]
 │   │   ├── lcd_task.h         # LCD task declaration
 │   │   ├── queues.h           # FreeRTOS queue handle declarations
 │   │   ├── sensor_data.h      # Shared structs (SensorData_t, FormattedData_t)
@@ -381,7 +391,7 @@ SenseLink_Firmware/
 │   └── Src/
 │       ├── alarm_task.c       # Latching alarm state machine + LED control
 │       ├── bme280_task.c      # Sensor acquisition + centralised formatting
-│       ├── lcd_i2c.c          # HD44780 4-bit driver via PCF8574
+│       ├── lcd_i2c.c          # HD44780 4-bit driver via PCF8574 [Custom Implementation]
 │       ├── lcd_task.c         # LCD display consumer task
 │       ├── queues.c           # Queue handle definitions
 │       ├── uart_task.c        # UART telemetry + CPU stats reporter
