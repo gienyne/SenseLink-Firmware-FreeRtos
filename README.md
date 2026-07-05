@@ -198,29 +198,37 @@ the alarm escalates, it does not automatically recover — an explicit Reset
 command from the dashboard is required.
 
 ```mermaid
-stateDiagram-v2
-    %% Configuration des etats principaux
-    state "NOMINAL (Green LED On)" as NOMINAL
-    state "WARNING (Yellow LED On)" as WARNING
-    state "CRITICAL (Red LED Blinking - LATCHED)" as CRITICAL
-    state "Real-Time Re-evaluation" as EVAL <<choice>>
+graph TD
+    %% Configuration des styles de boîtes (Design épuré)
+    classDef nominal fill:#e6f4ea,stroke:#137333,stroke-width:2px,rx:10px,ry:10px;
+    classDef warning fill:#fef7e0,stroke:#b06000,stroke-width:2px,rx:10px,ry:10px;
+    classDef critical fill:#fce8e6,stroke:#c5221f,stroke-width:2px,rx:10px,ry:10px;
+    classDef decision fill:#ffffff,stroke:#5f6368,stroke-width:2px;
 
-    %% Transitions initiales et standards
-    [*] --> NOMINAL
-    
-    NOMINAL --> WARNING : T over 30C OR H over 55%
-    WARNING --> NOMINAL : T under 30C AND H under 55%
-    
-    NOMINAL --> CRITICAL : T over 30C AND H over 55%
-    WARNING --> CRITICAL : T over 30C AND H over 55%
+    %% Configuration des états
+    S1["● STATE 1: NOMINAL<br/><i>Green LED On</i>"]:::nominal
+    S2["● STATE 2: WARNING<br/><i>Yellow LED On</i>"]:::warning
+    S3["● STATE 3: CRITICAL<br/><i>Red LED Blinking (LATCHED)</i>"]:::critical
+    EVAL{"Real-Time<br/>Re-evaluation"}:::decision
 
-    %% Logique de RESET et choix conditionnel
-    CRITICAL --> EVAL : RESET Command Received (UART R)
-    
-    EVAL --> NOMINAL : Both Thresholds Cleared
-    EVAL --> WARNING : Only One Threshold Exceeded (Fallback)
-    EVAL --> CRITICAL : Thresholds Still Exceeded (Re-trigger)
-```
+    %% Flux nominal et warning (Alignement vertical)
+    S1 -->|T > 30°C OR H > 55%| S2
+    S2 -->|T <= 30°C AND H <= 55%| S1
+
+    %% Escalades vers le mode Critique
+    S1 -->|Direct Jump| S3
+    S2 -->|T > 30°C AND H > 55%| S3
+
+    %% Logique de RESET (Bouton actionné)
+    S3 ==>|RESET Command / UART 'R'| EVAL
+
+    %% Routes de réévaluation après RESET
+    EVAL -.->|Both Thresholds Cleared| S1
+    EVAL -.->|Only One Exceeded| S2
+    EVAL -.->|Still Critically Exceeded| S3
+
+    %% Ajustement d'alignement pour forcer une belle géométrie
+    style EVAL rx:20px,ry:20px;
 
 The `current_alarm_state` variable is written by TaskAlarm and read by
 TaskSensor, which embeds it in the UART telemetry string (`A:1/2/3`).
