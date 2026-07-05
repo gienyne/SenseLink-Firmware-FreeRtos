@@ -199,36 +199,32 @@ command from the dashboard is required.
 
 ```mermaid
 graph TD
-    %% Configuration des styles de boîtes (Design épuré)
-    classDef nominal fill:#e6f4ea,stroke:#137333,stroke-width:2px,rx:10px,ry:10px;
-    classDef warning fill:#fef7e0,stroke:#b06000,stroke-width:2px,rx:10px,ry:10px;
-    classDef critical fill:#fce8e6,stroke:#c5221f,stroke-width:2px,rx:10px,ry:10px;
-    classDef decision fill:#ffffff,stroke:#5f6368,stroke-width:2px;
+    %% Configuration des styles (Design simple et net, sans couleurs)
+    classDef nominal fill:#f9f9f9,stroke:#333,stroke-width:2px,rx:10px,ry:10px;
+    classDef warning fill:#fff,stroke:#333,stroke-width:2px,rx:10px,ry:10px;
+    classDef critical fill:#fff,stroke:#333,stroke-width:2px,rx:10px,ry:10px;
+    classDef decision fill:#ffffff,stroke:#333,stroke-width:2px;
 
-    %% Configuration des états
-    S1["● STATE 1: NOMINAL<br/><i>Green LED On</i>"]:::nominal
-    S2["● STATE 2: WARNING<br/><i>Yellow LED On</i>"]:::warning
-    S3["● STATE 3: CRITICAL<br/><i>Red LED Blinking (LATCHED)</i>"]:::critical
+    %% Configuration des etats (Simple et direct)
+    S1["STATE 1: NOMINAL<br/>Green LED On"]:::nominal
+    S2["STATE 2: WARNING<br/>Yellow LED On"]:::warning
+    S3["STATE 3: CRITICAL<br/>Red LED Blinking (LATCHED)"]:::critical
     EVAL{"Real-Time<br/>Re-evaluation"}:::decision
 
-    %% Flux nominal et warning (Alignement vertical)
-    S1 -->|T > 30°C OR H > 55%| S2
-    S2 -->|T <= 30°C AND H <= 55%| S1
+    %% Flux Nominal <-> Warning (Alignement parfait)
+    S1 ==>|T > 30°C OR H > 55%| S2
+    S2 ==>|T <= 30°C AND H <= 55%| S1
 
-    %% Escalades vers le mode Critique
-    S1 -->|Direct Jump| S3
-    S2 -->|T > 30°C AND H > 55%| S3
+    %% Escalade vers Critical (Simple et propre)
+    S2 ==>|T > 30°C AND H > 55%| S3
 
-    %% Logique de RESET (Bouton actionné)
-    S3 ==>|RESET Command / UART 'R'| EVAL
+    %% Commande de RESET (Action de l'utilisateur)
+    S3 ==>|RESET Command (UART 'R')| EVAL
 
-    %% Routes de réévaluation après RESET
+    %% Résultats de la réévaluation (Non-entremêlés, routes claires)
     EVAL -.->|Both Thresholds Cleared| S1
-    EVAL -.->|Only One Exceeded| S2
     EVAL -.->|Still Critically Exceeded| S3
-
-    %% Ajustement d'alignement pour forcer une belle géométrie
-    style EVAL rx:20px,ry:20px;
+    EVAL -.->|Only One Exceeded| S2
 ```
 
 The `current_alarm_state` variable is written by TaskAlarm and read by
