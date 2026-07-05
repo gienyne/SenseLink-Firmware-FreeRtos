@@ -1,6 +1,6 @@
 # SenseLink - Real-Time IoT Environmental Monitoring Station
 
-> A FreeRTOS multitasking firmware project on STM32nucleo-F030R8, extended with a full IoT
+> A FreeRTOS multitasking firmware project on STM32, extended with a full IoT
 > pipeline: Python UART-to-MQTT bridge and a React real-time dashboard.
 
 ---
@@ -39,8 +39,8 @@ The primary goal was to architect a correct, stable FreeRTOS multitasking
 application on a device with only **8 KB of RAM**, then extend it with a
 full IoT stack to visualise and interact with the running system in real time.
 
-Every design decision in the firmware — task stack sizes, queue depths,
-mutex placement, ISR design — was driven by the constraints of FreeRTOS
+Every design decision in the firmware: task stack sizes, queue depths,
+mutex placement, ISR design , was driven by the constraints of FreeRTOS
 running on the STM32F030R8.
 
 ---
