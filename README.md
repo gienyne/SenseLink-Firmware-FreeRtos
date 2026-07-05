@@ -497,9 +497,6 @@ data arrives.
 ### Live telemetry — Critical state
 ![Dashboard Critical](https://github.com/gienyne/SenseLink-Firmware-FreeRtos/blob/main/Screenshots/S_%C3%9Cbersicht2.png)
 
-### Python bridge terminal output
-![Bridge terminal](docs/screenshots/bridge_terminal.png)
-
 
 https://github.com/user-attachments/assets/5a87f34f-4455-497a-9637-b3505b58a1ff
 
