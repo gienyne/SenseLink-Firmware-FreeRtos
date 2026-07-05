@@ -266,6 +266,9 @@ IDLE         : 98%
 TaskAlarm    : <1%
 TaskSensor   : <1%
 ---------------
+
+### PuTTY UART debug output
+![PuTTY UART](https://github.com/gienyne/SenseLink-Firmware-FreeRtos/blob/main/Screenshots/Putty.png)
 ```
 
 **Important design decision:** `xTaskGetTickCount()` is used as the time
@@ -304,7 +307,7 @@ Remaining heap for queues, TCBs, mutex: ~900 bytes
 ```
 
 Every byte was accounted for. Exceeding the heap caused `osThreadCreate()`
-to return `NULL` silently — diagnosed by toggling LD2 on a null handle check.
+to return `NULL` silently, diagnosed by toggling LD2 on a null handle check.
 
 ---
 
@@ -447,7 +450,7 @@ Both ports should show `LISTENING`.
 cd SenseLink_Bridge
 source venv/Scripts/activate
 
-# Close PuTTY first — it locks COM9
+# Close PuTTY first - it locks COM9
 python bridge.py
 ```
 
@@ -475,66 +478,22 @@ data arrives.
 
 ---
 
-## UART Protocol
-
-### Telemetry line (every 2 seconds, produced by TaskSensor via TaskUART)
-
-```
-T:27.9 H:57.9 P:1001.3 A:1\r\n
-```
-
-| Field | Description |
-|---|---|
-| T | Temperature (°C) |
-| H | Relative humidity (%) |
-| P | Pressure (hPa) |
-| A | Alarm state: 1=Nominal, 2=Warning, 3=Critical |
-
-### CPU statistics block (every 5 seconds, produced by TaskUART)
-
-```
---- CPU USE ---
-TaskSensor   : <1%
-TaskUART     : <1%
-TaskLCD      : 0%
-TaskAlarm    : <1%
-IDLE         : 98%
----------------
-```
-
-### Downlink command
-
-The bridge writes `b'R'` when the dashboard publishes `RESET`. The STM32
-`HAL_UART_RxCpltCallback` sets `reset_request = 1` and `current_alarm_state = 1`.
-TaskAlarm clears the latch on the next sensor reading if values are within range.
-
----
-
-## MQTT Topics
-
-| Topic | Direction | Payload |
-|---|---|---|
-| `senselink/data` | Bridge -> Dashboard | `{"temperature": 29.7, "humidity": 54.2, "pressure": 1001.3, "alarmState": 1, "timestamp": ...}` |
-| `senselink/cpu` | Bridge -> Dashboard | `{"taskName": "IDLE", "cpuUsage": 98, "timestamp": ...}` |
-| `senselink/cmd` | Dashboard -> Bridge | `"RESET"` |
-
----
-
-## Dashboard Screenshots
-
-<!-- Add your screenshots here -->
-
 ### Live telemetry — Nominal state
 ![Dashboard Nominal](docs/screenshots/dashboard_nominal.png)
 
 ### Live telemetry — Warning state
-![Dashboard Warning](docs/screenshots/dashboard_warning.png)
+![Dashboard Warning](https://github.com/gienyne/SenseLink-Firmware-FreeRtos/blob/main/Screenshots/S_%C3%9Cbersicht1.png)
+
+### Live telemetry — Critical state
+![Dashboard Critical](https://github.com/gienyne/SenseLink-Firmware-FreeRtos/blob/main/Screenshots/S_%C3%9Cbersicht2.png)
 
 ### Python bridge terminal output
 ![Bridge terminal](docs/screenshots/bridge_terminal.png)
 
-### PuTTY UART debug output
-![PuTTY UART](docs/screenshots/putty_uart.png)
+
+https://github.com/user-attachments/assets/5a87f34f-4455-497a-9637-b3505b58a1ff
+
+
 
 ---
 
