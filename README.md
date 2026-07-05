@@ -198,7 +198,6 @@ command from the dashboard is required.
 
 ```mermaid
 graph TD
-    %% Configuration des styles (Nettoyé et robuste)
     classDef nominal fill:#edf7ed,stroke:#1e4620,stroke-width:2px,rx:8px,ry:8px;
     classDef warning fill:#fff8e1,stroke:#b28900,stroke-width:2px,rx:8px,ry:8px;
     classDef critical fill:#fdeded,stroke:#5f1414,stroke-width:2px,rx:8px,ry:8px;
@@ -207,17 +206,14 @@ graph TD
     classDef subCritical fill:#fdeded,stroke:#5f1414,stroke-width:1px,rx:6px,ry:6px;
     classDef action fill:#fff,stroke:#fff,stroke-width:0px;
 
-    %% États principaux
-    S1["<b>STATE 1: NOMINAL</b><hr/>🟢 Green LED ON"]:::nominal
-    S2["<b>STATE 2: WARNING</b><hr/>🟡 Yellow LED ON"]:::warning
-    S3["<b>STATE 3: CRITICAL (LATCHED)</b><hr/>🚨 Red LED BLINKING<br/>Alarm Latched"]:::critical
+    S1["<b>STATE 1: NOMINAL</b><hr/> Green LED ON"]:::nominal
+    S2["<b>STATE 2: WARNING</b><hr/> Yellow LED ON"]:::warning
+    S3["<b>STATE 3: CRITICAL (LATCHED)</b><hr/> Red LED BLINKING<br/>Alarm Latched"]:::critical
 
-    %% Flux principal descendant
     S1 -->|T > 30°C<br/>OR H > 55%| S2
     S2 -->|T > 30°C<br/>AND H > 55%| S3
     S3 -->|RESET command received| EVAL_TXT
 
-    %% Boîte d'évaluation (Sous-graphe)
     subgraph EVAL ["EVALUATE CURRENT SENSOR VALUES"]
         EVAL_TXT[" "]:::action
         
@@ -228,12 +224,10 @@ graph TD
         COND_NOM["<b>T <= 30°C<br/>AND H <= 55%</b><hr/>Both thresholds<br/>now cleared"]:::subNominal
     end
 
-    %% Connexions internes du sous-graphe
     EVAL_TXT --> COND_CRIT
     EVAL_TXT --> COND_WARN
     EVAL_TXT --> COND_NOM
 
-    %% Noeuds d'actions de sortie
     ACT_RE["Re-trigger"]:::action
     ACT_FALL["Fallback"]:::action
     ACT_SUCC["Success"]:::action
@@ -242,15 +236,12 @@ graph TD
     COND_WARN --> ACT_FALL
     COND_NOM --> ACT_SUCC
 
-    %% Boucles de retour de fin de cycle (CORRIGÉES)
     ACT_RE --> S3
     ACT_FALL --> S2
     ACT_SUCC --> S1
 
-    %% Surveillance de routine standard pour redescendre de Warning à Nominal
     S2 -->|T <= 30°C<br/>AND H <= 55%| S1
 
-    %% Alignements cosmétiques pour forcer le placement en ligne
     ACT_RE ----> ACT_FALL ----> ACT_SUCC
     style EVAL fill:#fff,stroke:#333,stroke-width:1px,stroke-dasharray: 5 5;
     style EVAL_TXT fill:transparent,stroke:transparent;
