@@ -104,7 +104,6 @@ Bus contention between tasks is prevented by a FreeRTOS mutex.
 The firmware runs four concurrent FreeRTOS tasks. Each task has a single,
 well-defined responsibility following the separation of concerns principle.
 
-```
 ```mermaid
 graph TD
     %% Nodes
@@ -123,7 +122,6 @@ graph TD
     style TaskAlarm fill:#bbf,stroke:#333,stroke-width:1px
     style TaskLCD fill:#bbf,stroke:#333,stroke-width:1px
     style TaskUART fill:#bbf,stroke:#333,stroke-width:1px
-```
 ```
 
 | Task | Stack | Role |
