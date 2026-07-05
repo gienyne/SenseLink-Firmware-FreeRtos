@@ -208,9 +208,9 @@ graph TD
     classDef action fill:#fff,stroke:#fff,stroke-width:0px;
 
     %% États principaux
-    S1["<b>STATE 1: NOMINAL</b><hr/>🟢 Green LED ON"]:::nominal
-    S2["<b>STATE 2: WARNING</b><hr/>🟡 Yellow LED ON"]:::warning
-    S3["<b>STATE 3: CRITICAL (LATCHED)</b><hr/>🚨 Red LED BLINKING<br/>Alarm Latched"]:::critical
+    S1["<b>STATE 1: NOMINAL</b><hr/> Green LED ON"]:::nominal
+    S2["<b>STATE 2: WARNING</b><hr/> Yellow LED ON"]:::warning
+    S3["<b>STATE 3: CRITICAL (LATCHED)</b><hr/> Red LED BLINKING<br/>Alarm Latched"]:::critical
 
     %% Flux principal descendant
     S1 -->|T > 30°C<br/>OR H > 55%| S2
