@@ -507,4 +507,3 @@ https://github.com/user-attachments/assets/5a87f34f-4455-497a-9637-b3505b58a1ff
 | LCD display corruption | Increased LCD queue depth from 2 to 3 |
 | CPU stats buffer overflow after removing a task | Runtime `uxTaskGetNumberOfTasks()` guard |
 | CPU stats showing 100% on all tasks | Replaced TIM3 (overflowed every 65 ms) with `xTaskGetTickCount()` |
-| UART downlink command lost in queue noise | ISR filters for `'R'` only before acting |
