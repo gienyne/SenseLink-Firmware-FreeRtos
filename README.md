@@ -76,7 +76,6 @@ running on the STM32F030R8.
 
 - Bidirectional UART-to-MQTT bridge in Python.
 - React dashboard with real-time WebSocket MQTT subscription.
-- Componentised React architecture with custom hooks and isolated CSS.
 
 ---
 
