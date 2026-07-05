@@ -82,15 +82,16 @@ void StartTaskUART(void const * argument)
              * uxTaskGetSystemState() call and prevent writing beyond the
              * bounds of pxTaskStatusArray. */
             UBaseType_t uxNbTasks = uxTaskGetNumberOfTasks();
-            if (uxNbTasks > 10) uxNbTasks = 10;
+            if (uxNbTasks > 10)
+            	{
+            	uxNbTasks = 10;
+            	}
 
-            UBaseType_t uxArraySize = uxTaskGetSystemState(
-                pxTaskStatusArray, uxNbTasks, &TotalRunTime);
+            UBaseType_t uxArraySize = uxTaskGetSystemState(pxTaskStatusArray, uxNbTasks, &TotalRunTime);
 
             if (uxArraySize > 0 && TotalRunTime > 0)
             {
-                HAL_UART_Transmit(&huart2,
-                                  (uint8_t *)"\r\n--- CPU USE ---\r\n", 18, 100);
+                HAL_UART_Transmit(&huart2, (uint8_t *)"\r\n--- CPU USE ---\r\n", 18, 100);
 
                 for (UBaseType_t i = 0; i < uxArraySize; i++)
                 {
@@ -104,8 +105,7 @@ void StartTaskUART(void const * argument)
                      * scheduled (ulRunTimeCounter == 0). */
                     if (percent == 0 && pxTaskStatusArray[i].ulRunTimeCounter > 0)
                     {
-                        snprintf(msg, sizeof(msg), "%-12s : <1%%\r\n",
-                                 pxTaskStatusArray[i].pcTaskName);
+                        snprintf(msg, sizeof(msg), "%-12s : <1%%\r\n", pxTaskStatusArray[i].pcTaskName);
                     }
                     else
                     {
