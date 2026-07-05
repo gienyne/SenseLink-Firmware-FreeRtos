@@ -1,6 +1,6 @@
-# SenseLink — Real-Time IoT Environmental Monitoring Station
+# SenseLink - Real-Time IoT Environmental Monitoring Station
 
-> A FreeRTOS multitasking firmware project on STM32, extended with a full IoT
+> A FreeRTOS multitasking firmware project on STM32nucleo-F030R8, extended with a full IoT
 > pipeline: Python UART-to-MQTT bridge and a React real-time dashboard.
 
 ---
