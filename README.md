@@ -267,9 +267,9 @@ TaskAlarm    : <1%
 TaskSensor   : <1%
 ---------------
 
+```
 ### PuTTY UART debug output
 ![PuTTY UART](https://github.com/gienyne/SenseLink-Firmware-FreeRtos/blob/main/Screenshots/Putty.png)
-```
 
 **Important design decision:** `xTaskGetTickCount()` is used as the time
 base (1 ms resolution via SysTick), not a hardware timer. This avoids
