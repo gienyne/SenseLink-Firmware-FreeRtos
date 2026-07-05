@@ -311,12 +311,12 @@ to return `NULL` silently — diagnosed by toggling LD2 on a null handle check.
 
 ## Full IoT Pipeline
 
-```
+```mermaid
 graph TD
     %% Configuration des styles pour différencier les couches du projet
     classDef HW fill:#f4f4f4,stroke:#333,stroke-width:2px;
-    classDef OS fill:#e3f2fd,stroke:#0d47a1,stroke-width:2px,rx:5px;
-    classDef SW fill:#fff3e0,stroke:#e65100,stroke-width:2px,rx:5px;
+    classDef OS fill:#e3f2fd,stroke:#0d47a1,stroke-width:2px;
+    classDef SW fill:#fff3e0,stroke:#e65100,stroke-width:2px;
     classDef NET fill:#ede7f6,stroke:#4a148c,stroke-width:2px;
 
     %% --- COUCHE EMBARQUÉE (STM32 & FreeRTOS) ---
@@ -342,22 +342,22 @@ graph TD
     TS --> Q_Uart --> TU --> UART2
 
     %% --- COUCHE PASSERELLE & CRYPTE MQTT ---
-    PY["bridge.py (Python)<br/><i>pyserial + paho-mqtt</i>"]:::SW
+    PY["bridge.py (Python)<br/>pyserial + paho-mqtt"]:::SW
     Broker["Mosquitto Broker<br/>(localhost:1883/9001)"]:::NET
 
-    UART2 <==>|USB / Virtual COM| PY
-    PY -->|Publish: senselink/data<br/>Publish: senselink/cpu| Broker
+    UART2 <-->|USB / Virtual COM| PY
+    PY -->|"Publish: senselink/data & senselink/cpu"| Broker
 
     %% --- COUCHE IHM (React Dashboard) ---
-    Dashboard["React Dashboard (WebSockets)<br/><i>Gauges · Chart · LED panel · CPU</i>"]:::SW
-    Broker <==>|WebSockets| Dashboard
+    Dashboard["React Dashboard (WebSockets)<br/>Gauges · Chart · LED panel · CPU"]:::SW
+    Broker <-->|WebSockets| Dashboard
 
     %% --- PIPELINE DE RETOUR (RESET COMMAND) ---
-    ISR["STM32 UART ISR<br/><i>HAL_UART_RxCpltCallback</i>"]:::OS
+    ISR["STM32 UART ISR<br/>HAL_UART_RxCpltCallback"]:::OS
     
-    Dashboard -.->|Click 'Reset Alarm' Button<br/>Topic: senselink/cmd| Broker
+    Dashboard -.->|"Click Reset Alarm Button (senselink/cmd)"| Broker
     Broker -.-> PY
-    PY -.|ser.write b'R'|==> ISR
+    PY -.->|"ser.write(b'R')"| ISR
     ISR -.->|reset_request = 1| TA
 
 ```
