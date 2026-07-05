@@ -197,31 +197,28 @@ the alarm escalates, it does not automatically recover — an explicit Reset
 command from the dashboard is required.
 
 ```
-                    ┌───────────────────────────────┐
-                    │                               │
-          ┌─────────▼──────────┐         ┌──────────▼─────────┐
-          │    State 1         │         │    State 2          │
-          │    NOMINAL         │         │    WARNING          │
-          │    Green LED on    │         │    Yellow LED on    │
-          └─────────┬──────────┘         └──────────┬──────────┘
-                    │                               │
-          T > 30°C  │                     T > 30°C  │
-          OR        │                     AND        │
-          H > 55%   │                     H > 55%   │
-                    │                               │
-          ┌─────────▼───────────────────────────────▼──┐
-          │                  State 3                    │
-          │                  CRITICAL                   │
-          │                  Red LED blinking           │
-          └─────────────────────────────────────────────┘
-                    │
-                    │ RESET command received (UART 'R')
-                    │ AND readings back within thresholds
-                    │
-          ┌─────────▼──────────┐
-          │    State 1         │
-          │    NOMINAL         │
-          └────────────────────┘
+stateDiagram-v2
+    %% Configuration des états principaux
+    state "NOMINAL <br/> (Green LED On)" as NOMINAL
+    state "WARNING <br/> (Yellow LED On)" as WARNING
+    state "CRITICAL <br/> (Red LED Blinking - LATCHED)" as CRITICAL
+    state "Real-Time Re-evaluation" as EVAL <<choice>>
+
+    %% Transitions initiales et standards
+    [*] --> NOMINAL
+    
+    NOMINAL --> WARNING : T > 30°C OR H > 55%
+    WARNING --> NOMINAL : T <= 30°C AND H <= 55%
+    
+    NOMINAL --> CRITICAL : T > 30°C AND H > 55%
+    WARNING --> CRITICAL : T > 30°C AND H > 55%
+
+    %% Logique de RESET et choix conditionnel
+    CRITICAL --> EVAL : RESET Command Received (UART 'R')
+    
+    EVAL --> NOMINAL : Both Thresholds Cleared\n(T <= 30°C AND H <= 55%)
+    EVAL --> WARNING : Only One Threshold Exceeded\n(Fallback State)
+    EVAL --> CRITICAL : Thresholds Still Exceeded\n(Reset Rejected / Re-trigger)
 ```
 
 The `current_alarm_state` variable is written by TaskAlarm and read by
