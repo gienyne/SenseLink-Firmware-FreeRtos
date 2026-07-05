@@ -107,21 +107,21 @@ well-defined responsibility following the separation of concerns principle.
 ```mermaid
 graph TD
     %% Nodes
-    TaskSensor[TaskSensor <br/> 256 words<br/>• Reads BME280 via I2C<br/>• Centralized snprintf]
-    TaskAlarm[TaskAlarm <br/> 64 words<br/>• State Machine<br/>• Drives LEDs]
-    TaskLCD[TaskLCD <br/> 128 words<br/>• Writes LCD via I2C]
-    TaskUART[TaskUART <br/> 192 words<br/>• Sends Telemetry<br/>• Reports CPU %]
+    TaskSensor["TaskSensor (256 words)<br/>• Reads BME280 via I2C<br/>• Centralized snprintf"]
+    TaskAlarm["TaskAlarm (64 words)<br/>• State Machine<br/>• Drives LEDs"]
+    TaskLCD["TaskLCD (128 words)<br/>• Writes LCD via I2C"]
+    TaskUART["TaskUART (192 words)<br/>• Sends Telemetry<br/>• Reports CPU %"]
 
     %% Queues
-    TaskSensor -->|AlarmQueue <br/> 1 x struct| TaskAlarm
-    TaskSensor -->|LcdQueue <br/> 3 x str| TaskLCD
-    TaskSensor -->|UartQueue <br/> 2 x str| TaskUART
+    TaskSensor -->|AlarmQueue<br/>1 x struct| TaskAlarm
+    TaskSensor -->|LcdQueue<br/>3 x str| TaskLCD
+    TaskSensor -->|UartQueue<br/>2 x str| TaskUART
 
     %% Styling
-    style TaskSensor fill:#f9f,stroke:#333,stroke-width:2px
-    style TaskAlarm fill:#bbf,stroke:#333,stroke-width:1px
-    style TaskLCD fill:#bbf,stroke:#333,stroke-width:1px
-    style TaskUART fill:#bbf,stroke:#333,stroke-width:1px
+    style TaskSensor fill:#f4f4f4,stroke:#333,stroke-width:2px
+    style TaskAlarm fill:#e6f2ff,stroke:#333,stroke-width:1px
+    style TaskLCD fill:#e6f2ff,stroke:#333,stroke-width:1px
+    style TaskUART fill:#e6f2ff,stroke:#333,stroke-width:1px
 ```
 
 | Task | Stack | Role |
