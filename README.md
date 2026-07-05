@@ -229,6 +229,7 @@ graph TD
 
     %% Ajustement d'alignement pour forcer une belle géométrie
     style EVAL rx:20px,ry:20px;
+```
 
 The `current_alarm_state` variable is written by TaskAlarm and read by
 TaskSensor, which embeds it in the UART telemetry string (`A:1/2/3`).
