@@ -225,6 +225,7 @@ graph TD
     EVAL -.->|Both Thresholds Cleared| S1
     EVAL -.->|Still Critically Exceeded| S3
     EVAL -.->|Only One Exceeded| S2
+
 ```
 
 The `current_alarm_state` variable is written by TaskAlarm and read by
