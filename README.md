@@ -105,33 +105,19 @@ The firmware runs four concurrent FreeRTOS tasks. Each task has a single,
 well-defined responsibility following the separation of concerns principle.
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                  FreeRTOS Scheduler                      │
-│                                                          │
-│  ┌─────────────┐   ┌─────────────┐   ┌──────────────┐  │
-│  │ TaskSensor  │   │  TaskLCD    │   │  TaskUART    │  │
-│  │ 256 words   │   │  128 words  │   │  192 words   │  │
-│  │             │   │             │   │              │  │
-│  │ BME280 read │   │ LCD display │   │ UART TX      │  │
-│  │ snprintf    │   │ consumer    │   │ CPU stats    │  │
-│  │ queue send  │   │             │   │              │  │
-│  └──────┬──────┘   └──────▲──────┘   └──────▲───────┘  │
-│         │                 │                  │          │
-│         │    ┌────────────┘    ┌─────────────┘          │
-│         │    │ LcdQueue(3)     │ UartQueue(2)            │
-│         │    │ FormattedData_t │ FormattedData_t         │
-│         │                                               │
-│         └──────────────────────────────────────────────►│
-│              AlarmQueue(1) SensorData_t                  │
-│                            ▼                             │
-│                   ┌──────────────┐                       │
-│                   │  TaskAlarm   │                       │
-│                   │  64 words    │                       │
-│                   │              │                       │
-│                   │ State machine│                       │
-│                   │ LED control  │                       │
-│                   └──────────────┘                       │
-└─────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────┐
+       │                   TaskSensor (256 w)                   │
+       │  • Reads BME280 via I2C   • Centralized snprintf       │
+       └───────┬───────────────────┬────────────────────┬───────┘
+               │                   │                    │
+  AlarmQueue   │      LcdQueue     │       UartQueue    │
+  (1 x struct) │      (3 x str)    │       (2 x str)    │
+               ▼                   ▼                    ▼
+   ┌──────────────────────┐┌────────────────┐┌──────────────────┐
+   │   TaskAlarm (64 w)   ││ TaskLCD (128 w)││ TaskUART (192 w) │
+   │ • State Machine      ││ • Writes LCD   ││ • Sends Telemetry│
+   │ • Drives LEDs        ││   via I2C      ││ • Reports CPU %  │
+   └──────────────────────┘└────────────────┘└──────────────────┘
 ```
 
 | Task | Stack | Role |
