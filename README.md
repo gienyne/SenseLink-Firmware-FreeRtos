@@ -10,7 +10,7 @@
 - [Motivation](#motivation)
 - [What This Project Demonstrates](#what-this-project-demonstrates)
 - [Hardware](#hardware)
-- [FreeRTOS Architecture — The Core of the Project](#freertos-architecture--the-core-of-the-project)
+- [FreeRTOS Architecture - The Core of the Project](#freertos-architecture--the-core-of-the-project)
   - [Task Design](#task-design)
   - [Inter-Task Communication with Queues](#inter-task-communication-with-queues)
   - [Shared Resource Protection with Mutexes](#shared-resource-protection-with-mutexes)
