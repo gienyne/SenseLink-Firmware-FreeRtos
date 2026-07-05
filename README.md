@@ -312,40 +312,53 @@ to return `NULL` silently — diagnosed by toggling LD2 on a null handle check.
 ## Full IoT Pipeline
 
 ```
-BME280 Sensor
-     │
-     │ I2C (mutex protected)
-     ▼
-TaskSensor (FreeRTOS)
-     │
-     ├──► AlarmQueueHandle ──► TaskAlarm ──► Physical LEDs (PA8, PA9, PB5)
-     │
-     ├──► LcdQueueHandle   ──► TaskLCD   ──► 16x2 LCD Display
-     │
-     └──► UartQueueHandle  ──► TaskUART  ──► USART2 (38400 baud)
-                                                  │
-                                           USB / Virtual COM
-                                                  │
-                                          bridge.py (Python)
-                                          pyserial + paho-mqtt
-                                                  │
-                                         ┌────────┴────────┐
-                                         │                 │
-                                  senselink/data     senselink/cpu
-                                         │                 │
-                                   Mosquitto Broker (localhost:1883/9001)
-                                         │
-                                  React Dashboard (WebSockets)
-                                  Gauges · Chart · LED panel · CPU monitor
-                                         │
-                                  senselink/cmd  ◄── Reset Alarm button
-                                         │
-                                  bridge.py ──► ser.write(b'R') ──► STM32 ISR
-                                         │
-                                  HAL_UART_RxCpltCallback
-                                  reset_request = 1
-                                         │
-                                  TaskAlarm clears latch ──► Green LED
+graph TD
+    %% Configuration des styles pour différencier les couches du projet
+    classDef HW fill:#f4f4f4,stroke:#333,stroke-width:2px;
+    classDef OS fill:#e3f2fd,stroke:#0d47a1,stroke-width:2px,rx:5px;
+    classDef SW fill:#fff3e0,stroke:#e65100,stroke-width:2px,rx:5px;
+    classDef NET fill:#ede7f6,stroke:#4a148c,stroke-width:2px;
+
+    %% --- COUCHE EMBARQUÉE (STM32 & FreeRTOS) ---
+    BME["BME280 Sensor"]:::HW
+    TS["TaskSensor<br/>(FreeRTOS)"]:::OS
+    
+    Q_Alarm[("AlarmQueueHandle")]:::OS
+    Q_Lcd[("LcdQueueHandle")]:::OS
+    Q_Uart[("UartQueueHandle")]:::OS
+    
+    TA["TaskAlarm"]:::OS
+    TL["TaskLCD"]:::OS
+    TU["TaskUART"]:::OS
+    
+    LEDs["Physical LEDs<br/>(PA8, PA9, PB5)"]:::HW
+    LCD["16x2 LCD Display"]:::HW
+    UART2["USART2<br/>(38400 baud)"]:::HW
+
+    %% Liens Couche Embarquée
+    BME -->|I2C Mutex Protected| TS
+    TS --> Q_Alarm --> TA --> LEDs
+    TS --> Q_Lcd --> TL --> LCD
+    TS --> Q_Uart --> TU --> UART2
+
+    %% --- COUCHE PASSERELLE & CRYPTE MQTT ---
+    PY["bridge.py (Python)<br/><i>pyserial + paho-mqtt</i>"]:::SW
+    Broker["Mosquitto Broker<br/>(localhost:1883/9001)"]:::NET
+
+    UART2 <==>|USB / Virtual COM| PY
+    PY -->|Publish: senselink/data<br/>Publish: senselink/cpu| Broker
+
+    %% --- COUCHE IHM (React Dashboard) ---
+    Dashboard["React Dashboard (WebSockets)<br/><i>Gauges · Chart · LED panel · CPU</i>"]:::SW
+    Broker <==>|WebSockets| Dashboard
+
+    %% --- PIPELINE DE RETOUR (RESET COMMAND) ---
+    ISR["STM32 UART ISR<br/><i>HAL_UART_RxCpltCallback</i>"]:::OS
+    
+    Dashboard -.->|Click 'Reset Alarm' Button<br/>Topic: senselink/cmd| Broker
+    Broker -.-> PY
+    PY -.|ser.write b'R'|==> ISR
+    ISR -.->|reset_request = 1| TA
 ```
 
 ---
