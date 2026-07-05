@@ -198,32 +198,59 @@ command from the dashboard is required.
 
 ```mermaid
 graph TD
-    %% Configuration des styles (Design simple et net, sans couleurs)
-    classDef nominal fill:#f9f9f9,stroke:#333,stroke-width:2px,rx:10px,ry:10px;
-    classDef warning fill:#fff,stroke:#333,stroke-width:2px,rx:10px,ry:10px;
-    classDef critical fill:#fff,stroke:#333,stroke-width:2px,rx:10px,ry:10px;
-    classDef decision fill:#ffffff,stroke:#333,stroke-width:2px;
+    %% Configuration des styles (Fidèle à l'image)
+    classDef nominal fill:#edf7ed,stroke:#1e4620,stroke-width:2px,rx:8px,ry:8px;
+    classDef warning fill:#fff8e1,stroke:#b28900,stroke-width:2px,rx:8px,ry:8px;
+    classDef critical fill:#fdeded,stroke:#5f1414,stroke-width:2px,rx:8px,ry:8px;
+    classDef subNominal fill:#edf7ed,stroke:#1e4620,stroke-width:1px,rx:6px,ry:6px;
+    classDef subWarning fill:#fff8e1,stroke:#b28900,stroke-width:1px,rx:6px,ry:6px;
+    classDef subCritical fill:#fdeded,stroke:#5f1414,stroke-width:1px,rx:6px,ry:6px;
+    classDef action fill:#fff,stroke:#fff,stroke-width:0px;
 
-    %% Configuration des etats (Simple et direct)
-    S1["STATE 1: NOMINAL<br/>Green LED On"]:::nominal
-    S2["STATE 2: WARNING<br/>Yellow LED On"]:::warning
-    S3["STATE 3: CRITICAL<br/>Red LED Blinking (LATCHED)"]:::critical
-    EVAL{"Real-Time<br/>Re-evaluation"}:::decision
+    %% États principaux
+    S1["<b>STATE 1: NOMINAL</b><hr/>🟢 Green LED ON"]:::nominal
+    S2["<b>STATE 2: WARNING</b><hr/>🟡 Yellow LED ON"]:::warning
+    S3["<b>STATE 3: CRITICAL (LATCHED)</b><hr/>🚨 Red LED BLINKING<br/>Alarm Latched"]:::critical
 
-    %% Flux Nominal <-> Warning (Alignement parfait)
-    S1 ==>|T > 30°C OR H > 55%| S2
-    S2 ==>|T <= 30°C AND H <= 55%| S1
+    %% Flux principal descendant
+    S1 -->|T > 30°C<br/>OR H > 55%| S2
+    S2 -->|T > 30°C<br/>AND H > 55%| S3
+    S3 -->|RESET command received| EVAL_TXT
 
-    %% Escalade vers Critical (Simple et propre)
-    S2 ==>|T > 30°C AND H > 55%| S3
+    %% Boîte d'évaluation (Sous-graphe)
+    subgraph EVAL ["EVALUATE CURRENT SENSOR VALUES"]
+        EVAL_TXT[" "]:::action
+        
+        COND_CRIT["<b>T > 30°C<br/>AND H > 55%</b><hr/>Both thresholds<br/>still exceeded"]:::subCritical
+        
+        COND_WARN["<b>(T > 30°C AND H <= 55%)<br/>OR<br/>(T <= 30°C AND H > 55%)</b><hr/>Only one threshold<br/>exceeded"]:::subWarning
+        
+        COND_NOM["<b>T <= 30°C<br/>AND H <= 55%</b><hr/>Both thresholds<br/>now cleared"]:::subNominal
+    end
 
-    %% Commande de RESET (Action de l'utilisateur)
-    S3 ==>|RESET Command (UART 'R')| EVAL
+    %% Connexions internes du sous-graphe
+    EVAL_TXT --> COND_CRIT
+    EVAL_TXT --> COND_WARN
+    EVAL_TXT --> COND_NOM
 
-    %% Résultats de la réévaluation (Non-entremêlés, routes claires)
-    EVAL -.->|Both Thresholds Cleared| S1
-    EVAL -.->|Still Critically Exceeded| S3
-    EVAL -.->|Only One Exceeded| S2
+    %% Noeuds d'actions de sortie (Tout en bas)
+    ACT_RE["Re-trigger"]:::action
+    ACT_FALL["Fallback"]:::action
+    ACT_SUCC["Success"]:::action
+
+    COND_CRIT --> ACT_RE
+    COND_WARN --> ACT_FALL
+    COND_NOM --> ACT_SUCC
+
+    %% Boucles de retour de fin de cycle
+    ACT_RE --> S3
+    ACT_FALL -->|T <= 30°C<br/>AND H <= 55%| S2
+    ACT_SUCC --> S1
+
+    %% Alignements cosmétiques pour forcer le placement en ligne
+    ACT_RE ----> ACT_FALL ----> ACT_SUCC
+    style EVAL fill:#fff,stroke:#333,stroke-width:1px,stroke-dasharray: 5 5;
+    style EVAL_TXT fill:transparent,stroke:transparent;
 
 ```
 
