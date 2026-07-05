@@ -104,25 +104,34 @@ Bus contention between tasks is prevented by a FreeRTOS mutex.
 The firmware runs four concurrent FreeRTOS tasks. Each task has a single,
 well-defined responsibility following the separation of concerns principle.
 
-```
-mermaid
+```mermaid
 graph TD
-    %% Nodes
-    TaskSensor["TaskSensor (256 words)<br/>• Reads BME280 via I2C<br/>• Centralized snprintf"]
-    TaskAlarm["TaskAlarm (64 words)<br/>• State Machine<br/>• Drives LEDs"]
-    TaskLCD["TaskLCD (128 words)<br/>• Writes LCD via I2C"]
-    TaskUART["TaskUART (192 words)<br/>• Sends Telemetry<br/>• Reports CPU %"]
+    %% Configuration des styles (Design simple et net, sans couleurs)
+    classDef nominal fill:#f9f9f9,stroke:#333,stroke-width:2px,rx:10px,ry:10px;
+    classDef warning fill:#fff,stroke:#333,stroke-width:2px,rx:10px,ry:10px;
+    classDef critical fill:#fff,stroke:#333,stroke-width:2px,rx:10px,ry:10px;
+    classDef decision fill:#ffffff,stroke:#333,stroke-width:2px;
 
-    %% Queues
-    TaskSensor -->|AlarmQueue<br/>1 x struct| TaskAlarm
-    TaskSensor -->|LcdQueue<br/>3 x str| TaskLCD
-    TaskSensor -->|UartQueue<br/>2 x str| TaskUART
+    %% Configuration des etats (Simple et direct)
+    S1["STATE 1: NOMINAL<br/>Green LED On"]:::nominal
+    S2["STATE 2: WARNING<br/>Yellow LED On"]:::warning
+    S3["STATE 3: CRITICAL<br/>Red LED Blinking (LATCHED)"]:::critical
+    EVAL{"Real-Time<br/>Re-evaluation"}:::decision
 
-    %% Styling
-    style TaskSensor fill:#f4f4f4,stroke:#333,stroke-width:2px
-    style TaskAlarm fill:#e6f2ff,stroke:#333,stroke-width:1px
-    style TaskLCD fill:#e6f2ff,stroke:#333,stroke-width:1px
-    style TaskUART fill:#e6f2ff,stroke:#333,stroke-width:1px
+    %% Flux Nominal <-> Warning (Alignement parfait)
+    S1 ==>|T > 30°C OR H > 55%| S2
+    S2 ==>|T <= 30°C AND H <= 55%| S1
+
+    %% Escalade vers Critical (Simple et propre)
+    S2 ==>|T > 30°C AND H > 55%| S3
+
+    %% Commande de RESET (Action de l'utilisateur) - Guillemets corrigés ici
+    S3 ==>|"RESET Command (UART R)"| EVAL
+
+    %% Résultats de la réévaluation (Non-entremêlés, routes claires)
+    EVAL -.->|Both Thresholds Cleared| S1
+    EVAL -.->|Still Critically Exceeded| S3
+    EVAL -.->|Only One Exceeded| S2
 ```
 
 | Task | Stack | Role |
