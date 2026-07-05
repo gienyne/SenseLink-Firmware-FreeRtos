@@ -97,7 +97,7 @@ Bus contention between tasks is prevented by a FreeRTOS mutex.
 
 ---
 
-## FreeRTOS Architecture — The Core of the Project
+## FreeRTOS Architecture - The Core of the Project
 
 ### Task Design
 
