@@ -104,7 +104,8 @@ Bus contention between tasks is prevented by a FreeRTOS mutex.
 The firmware runs four concurrent FreeRTOS tasks. Each task has a single,
 well-defined responsibility following the separation of concerns principle.
 
-```mermaid
+```
+mermaid
 graph TD
     %% Nodes
     TaskSensor["TaskSensor (256 words)<br/>• Reads BME280 via I2C<br/>• Centralized snprintf"]
