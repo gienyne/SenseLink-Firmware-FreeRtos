@@ -85,11 +85,11 @@ running on the STM32F030R8.
 | Component | Details |
 |---|---|
 | Microcontroller | STM32 Nucleo-F030R8 (Cortex-M0, 48 MHz, **8 KB RAM**) |
-| Sensor | Bosch BME280 — temperature, humidity, pressure via I2C |
+| Sensor | Bosch BME280 -> temperature, humidity, pressure via I2C |
 | Display | 16x2 HD44780 LCD via PCF8574 I2C expander (0x27) |
-| Green LED | PA9 — Nominal alarm state |
-| Yellow LED | PA8 — Warning alarm state |
-| Red LED | PB5 — Critical alarm state (blinking) |
+| Green LED | PA9 -> Nominal alarm state |
+| Yellow LED | PA8 -> Warning alarm state |
+| Red LED | PB5 -> Critical alarm state (blinking) |
 | UART | USART2 at 38400 baud via ST-Link USB |
 
 **Wiring note:** The BME280 and the PCF8574 LCD expander share I2C1 (PB6/PB7).
@@ -130,7 +130,7 @@ graph TD
 | **TaskLCD** | 128 words | Receives pre-formatted strings and writes them to the LCD display. |
 | **TaskUART** | 192 words | Forwards telemetry to UART. Every 5 s, queries FreeRTOS and prints per-task CPU usage. |
 | **TaskAlarm** | 64 words | Evaluates thresholds, manages the latching alarm state machine, drives LEDs. |
-| **IDLE** | 128 words | FreeRTOS idle task. Consumes ~98% of CPU — the expected result of a correctly designed non-blocking RTOS application. |
+| **IDLE** | 128 words | FreeRTOS idle task. Consumes ~98% of CPU.|
 
 ### Inter-Task Communication with Queues
 
@@ -139,7 +139,7 @@ All data flows through typed FreeRTOS queues, ensuring thread safety and
 decoupling producer from consumers.
 
 ```c
-/* In main.c — queues created before the scheduler starts */
+/* In main.c - queues created before the scheduler starts */
 UartQueueHandle  = xQueueCreate(2, sizeof(FormattedData_t));
 AlarmQueueHandle = xQueueCreate(1, sizeof(SensorData_t));
 LcdQueueHandle   = xQueueCreate(3, sizeof(FormattedData_t));
@@ -147,8 +147,8 @@ LcdQueueHandle   = xQueueCreate(3, sizeof(FormattedData_t));
 
 Two payload types are used:
 
-- `SensorData_t` — raw `float` values sent to TaskAlarm for threshold comparison.
-- `FormattedData_t` — pre-formatted strings sent to TaskLCD and TaskUART.
+- `SensorData_t` - raw `float` values sent to TaskAlarm for threshold comparison.
+- `FormattedData_t` - pre-formatted strings sent to TaskLCD and TaskUART.
   By centralising all `snprintf` calls in TaskSensor, consumer tasks need
   no floating-point library support and their stack requirements are minimised.
 
@@ -169,12 +169,12 @@ from two tasks would corrupt both devices.
 A single FreeRTOS mutex (`i2cMutexHandle`) protects all I2C bus access:
 
 ```c
-/* In TaskSensor — acquiring the bus before reading the sensor */
+/* In TaskSensor - acquiring the bus before reading the sensor */
 osMutexWait(i2cMutexHandle, osWaitForever);
 bme280_sensor_read(&sensorData);
 osMutexRelease(i2cMutexHandle);
 
-/* In lcd_i2c.c — acquiring the bus before each LCD command */
+/* In lcd_i2c.c - acquiring the bus before each LCD command */
 static void LCD_SendCommand(uint8_t cmd) {
     osMutexWait(i2cMutexHandle, osWaitForever);
     LCD_Send(cmd, 0);
@@ -193,12 +193,11 @@ driver claims the bus.
 ### Alarm State Machine
 
 TaskAlarm implements a **latching three-state alarm state machine**. Once
-the alarm escalates, it does not automatically recover — an explicit Reset
+the alarm escalates, it does not automatically recover - an explicit Reset
 command from the dashboard is required.
 
 ```mermaid
 graph TD
-    %% Configuration des styles (Fidèle à l'image)
     classDef nominal fill:#edf7ed,stroke:#1e4620,stroke-width:2px,rx:8px,ry:8px;
     classDef warning fill:#fff8e1,stroke:#b28900,stroke-width:2px,rx:8px,ry:8px;
     classDef critical fill:#fdeded,stroke:#5f1414,stroke-width:2px,rx:8px,ry:8px;
@@ -207,17 +206,14 @@ graph TD
     classDef subCritical fill:#fdeded,stroke:#5f1414,stroke-width:1px,rx:6px,ry:6px;
     classDef action fill:#fff,stroke:#fff,stroke-width:0px;
 
-    %% États principaux
     S1["<b>STATE 1: NOMINAL</b><hr/> Green LED ON"]:::nominal
     S2["<b>STATE 2: WARNING</b><hr/> Yellow LED ON"]:::warning
     S3["<b>STATE 3: CRITICAL (LATCHED)</b><hr/> Red LED BLINKING<br/>Alarm Latched"]:::critical
 
-    %% Flux principal descendant
     S1 -->|T > 30°C<br/>OR H > 55%| S2
     S2 -->|T > 30°C<br/>AND H > 55%| S3
     S3 -->|RESET command received| EVAL_TXT
 
-    %% Boîte d'évaluation (Sous-graphe)
     subgraph EVAL ["EVALUATE CURRENT SENSOR VALUES"]
         EVAL_TXT[" "]:::action
         
@@ -227,13 +223,10 @@ graph TD
         
         COND_NOM["<b>T <= 30°C<br/>AND H <= 55%</b><hr/>Both thresholds<br/>now cleared"]:::subNominal
     end
-
-    %% Connexions internes du sous-graphe
     EVAL_TXT --> COND_CRIT
     EVAL_TXT --> COND_WARN
     EVAL_TXT --> COND_NOM
 
-    %% Noeuds d'actions de sortie (Tout en bas)
     ACT_RE["Re-trigger"]:::action
     ACT_FALL["Fallback"]:::action
     ACT_SUCC["Success"]:::action
@@ -242,12 +235,10 @@ graph TD
     COND_WARN --> ACT_FALL
     COND_NOM --> ACT_SUCC
 
-    %% Boucles de retour de fin de cycle
     ACT_RE --> S3
     ACT_FALL -->|T <= 30°C<br/>AND H <= 55%| S2
     ACT_SUCC --> S1
 
-    %% Alignements cosmétiques pour forcer le placement en ligne
     ACT_RE ----> ACT_FALL ----> ACT_SUCC
     style EVAL fill:#fff,stroke:#333,stroke-width:1px,stroke-dasharray: 5 5;
     style EVAL_TXT fill:transparent,stroke:transparent;
@@ -288,8 +279,7 @@ prevent buffer overflow if the task count changes:
 ```c
 UBaseType_t uxNbTasks = uxTaskGetNumberOfTasks();
 if (uxNbTasks > 10) uxNbTasks = 10;
-UBaseType_t uxArraySize = uxTaskGetSystemState(
-    pxTaskStatusArray, uxNbTasks, &TotalRunTime);
+UBaseType_t uxArraySize = uxTaskGetSystemState(pxTaskStatusArray, uxNbTasks, &TotalRunTime);
 ```
 
 ### Memory Budget
