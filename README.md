@@ -129,7 +129,23 @@ maintainable and easy to extend.
 ### Task Design
 
 ```mermaid
-...
+graph TD
+    %% Nodes
+    TaskSensor["TaskSensor (256 words)<br/>• Reads BME280 via I2C<br/>• Centralized snprintf"]
+    TaskAlarm["TaskAlarm (64 words)<br/>• State Machine<br/>• Drives LEDs"]
+    TaskLCD["TaskLCD (128 words)<br/>• Writes LCD via I2C"]
+    TaskUART["TaskUART (192 words)<br/>• Sends Telemetry<br/>• Reports CPU %"]
+
+    %% Queues
+    TaskSensor -->|AlarmQueue<br/>1 x struct| TaskAlarm
+    TaskSensor -->|LcdQueue<br/>3 x str| TaskLCD
+    TaskSensor -->|UartQueue<br/>2 x str| TaskUART
+
+    %% Styling
+    style TaskSensor fill:#f4f4f4,stroke:#333,stroke-width:2px
+    style TaskAlarm fill:#e6f2ff,stroke:#333,stroke-width:1px
+    style TaskLCD fill:#e6f2ff,stroke:#333,stroke-width:1px
+    style TaskUART fill:#e6f2ff,stroke:#333,stroke-width:1px
 ```
 
 | Task | Stack | Role |
