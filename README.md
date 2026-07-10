@@ -1,37 +1,25 @@
-# SenseLink - Real-Time IoT Environmental Monitoring Station
-
-> A FreeRTOS multitasking firmware project on STM32, extended with a full IoT
-> pipeline: Python UART-to-MQTT bridge and a React real-time dashboard.
+> A FreeRTOS multitasking firmware running on STM32,
+> extended with an IoT monitoring pipeline.
 
 ---
 
 ## Table of Contents
 
-- [Motivation](#motivation)
-- [What This Project Demonstrates](#what-this-project-demonstrates)
-- [Hardware](#hardware)
-- [FreeRTOS Architecture - The Core of the Project](#freertos-architecture--the-core-of-the-project)
-  - [Task Design](#task-design)
-  - [Inter-Task Communication with Queues](#inter-task-communication-with-queues)
-  - [Shared Resource Protection with Mutexes](#shared-resource-protection-with-mutexes)
-  - [Alarm State Machine](#alarm-state-machine)
-  - [CPU Usage Statistics](#cpu-usage-statistics)
-  - [Memory Budget](#memory-budget)
-- [Full IoT Pipeline](#full-io-t-pipeline)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-  - [1. Flash the Firmware](#1-flash-the-firmware)
-  - [2. Configure and Start Mosquitto](#2-configure-and-start-mosquitto)
-  - [3. Run the Python Bridge](#3-run-the-python-bridge)
-  - [4. Launch the React Dashboard](#4-launch-the-react-dashboard)
-- [UART Protocol](#uart-protocol)
-- [MQTT Topics](#mqtt-topics)
-- [Dashboard Screenshots](#dashboard-screenshots)
-- [Key Engineering Challenges](#key-engineering-challenges)
-
+- Project Overview
+- Why FreeRTOS?
+- Engineering Highlights
+- Key Features
+- System Architecture
+- Hardware
+- IoT Extension
+- Project Structure
+- Getting Started
+- Engineering Challenges
+- Documentation
+  
 ---
 
-## Motivation
+## Project Overview
 
 This project was built to demonstrate practical competency in **real-time
 embedded software engineering** on a resource-constrained microcontroller.
@@ -45,47 +33,68 @@ running on the STM32F030R8.
 
 ---
 
+## Why FreeRTOS?
+
+This project was intentionally designed around **FreeRTOS** to demonstrate the
+development of a real-time embedded application rather than a simple
+super-loop firmware.
+
+Instead of sequentially polling peripherals inside an infinite loop, the
+system is decomposed into independent tasks dedicated to sensing, alarm
+management, LCD updates and UART communication. FreeRTOS provides the
+scheduling, synchronization and communication mechanisms required to keep
+these activities deterministic and maintainable.
+
+The objective was not simply to "use FreeRTOS", but to apply its core
+concepts in a realistic resource-constrained environment by designing a
+thread-safe architecture based on tasks, queues, mutexes and interrupt-driven
+events on a microcontroller with only **8 KB of RAM**.
+
 ---
 
-## Project Highlights & Custom Engineering
+## Engineering Highlights
 
-* **Custom Bare-Metal LCD Driver (`lcd_i2c.c/.h`)**: Developed a complete, from-scratch HD44780 4-bit display driver interfaced via an I2C PCF8574 I/O expander. No external high-level libraries were used; implemented custom low-level byte-splitting, command registers, and strobe timing configurations directly over STM32 HAL I2C.
-* **Production-Grade Architecture**: Zero use of global variables for data passing between tasks, achieving complete thread safety via strictly typed FreeRTOS queues.
-* **Centralised Formatting**: Designed to format telemetry payloads exactly once (`snprintf` inside `TaskSensor`) before distribution, heavily reducing the stack usage and memory footprint across all other concurrent tasks.
+- **FreeRTOS-First Architecture**  
+  Designed around independent tasks communicating exclusively through typed FreeRTOS queues, eliminating the need for global variables and ensuring thread-safe communication.
+
+- **Custom Bare-Metal LCD Driver**  
+  Developed a complete HD44780 4-bit LCD driver over an I2C PCF8574 expander without relying on external high-level libraries.
+
+- **Resource-Constrained Design**  
+  Carefully optimized task stack sizes, queue depths and heap usage to run reliably on an STM32F030R8 with only **8 KB of RAM**.
+
+- **Runtime System Monitoring**  
+  Implemented per-task CPU usage statistics and UART telemetry to observe scheduler behaviour and runtime performance.
+
+- **Complete IoT Integration**  
+  Extended the embedded firmware with a Python UART-to-MQTT bridge and a React dashboard for real-time visualization and remote alarm control.
 
 ---
 
-## What This Project Demonstrates
+## Key Features
 
-### FreeRTOS Skills
+### FreeRTOS Architecture
 
-- Designing a **concurrent multitasking architecture** with four independent
-  tasks running on a Cortex-M0 at 48 MHz.
-- **Inter-task communication** via typed FreeRTOS message queues with
-  carefully chosen depths to balance latency and memory usage.
-- **Mutual exclusion** with a FreeRTOS mutex protecting a shared I2C bus
-  between two tasks.
-- **ISR-to-task signalling** using `HAL_UART_RxCpltCallback` with direct
-  flag-based notification to handle downlink commands without blocking.
-- **Runtime CPU statistics** using `uxTaskGetSystemState()` and
-  `xTaskGetTickCount()` to measure and report per-task CPU usage at runtime.
-- **Heap budget management** on an 8 KB device: tuning
-  `configTOTAL_HEAP_SIZE`, stack sizes and queue depths to keep the system
-  stable with zero heap fragmentation.
-- **Latching alarm state machine** implemented as a FreeRTOS task with
-  deterministic state transitions and hardware LED output.
+- Four concurrent FreeRTOS tasks with clearly defined responsibilities.
+- Thread-safe inter-task communication using typed message queues.
+- Shared I2C bus protection through a FreeRTOS mutex.
+- Interrupt-driven UART communication using ISR-to-task signalling.
+- Runtime CPU usage monitoring with FreeRTOS task statistics.
+- Memory optimisation for an STM32F030R8 with only **8 KB of RAM**.
+- Latching alarm state machine implemented as an independent FreeRTOS task.
 
-### Embedded Systems Skills
+### Embedded Software
 
-- I2C multi-device bus sharing (BME280 sensor + HD44780 LCD via PCF8574).
-- HD44780 LCD driver in 4-bit nibble mode with proper initialisation timing.
-- UART interrupt-driven reception with error recovery.
-- STM32 HAL peripheral configuration (I2C, USART, GPIO, TIM).
+- Custom HD44780 LCD driver over an I2C PCF8574 expander.
+- Shared I2C bus for the BME280 sensor and LCD display.
+- Interrupt-driven UART communication with error recovery.
+- STM32 HAL peripheral configuration (GPIO, I2C, USART and TIM).
 
-### IoT and Software Skills
+### IoT Integration
 
-- Bidirectional UART-to-MQTT bridge in Python.
-- React dashboard with real-time WebSocket MQTT subscription.
+- Python UART-to-MQTT bridge for bidirectional communication.
+- React dashboard with real-time MQTT telemetry.
+- Remote alarm reset from the dashboard to the STM32 firmware.
 
 ---
 
@@ -106,104 +115,94 @@ Bus contention between tasks is prevented by a FreeRTOS mutex.
 
 ---
 
-## FreeRTOS Architecture - The Core of the Project
+## System Architecture
+
+The firmware is organised around four independent FreeRTOS tasks, each
+responsible for a single function of the system. Communication between
+tasks is performed exclusively through typed FreeRTOS queues, while access
+to shared peripherals is synchronised using a mutex.
+
+This architecture eliminates global-variable based communication, enforces
+a clear separation of concerns and keeps the firmware deterministic,
+maintainable and easy to extend.
 
 ### Task Design
 
-The firmware runs four concurrent FreeRTOS tasks. Each task has a single,
-well-defined responsibility following the separation of concerns principle.
-
 ```mermaid
-graph TD
-    %% Nodes
-    TaskSensor["TaskSensor (256 words)<br/>• Reads BME280 via I2C<br/>• Centralized snprintf"]
-    TaskAlarm["TaskAlarm (64 words)<br/>• State Machine<br/>• Drives LEDs"]
-    TaskLCD["TaskLCD (128 words)<br/>• Writes LCD via I2C"]
-    TaskUART["TaskUART (192 words)<br/>• Sends Telemetry<br/>• Reports CPU %"]
-
-    %% Queues
-    TaskSensor -->|AlarmQueue<br/>1 x struct| TaskAlarm
-    TaskSensor -->|LcdQueue<br/>3 x str| TaskLCD
-    TaskSensor -->|UartQueue<br/>2 x str| TaskUART
-
-    %% Styling
-    style TaskSensor fill:#f4f4f4,stroke:#333,stroke-width:2px
-    style TaskAlarm fill:#e6f2ff,stroke:#333,stroke-width:1px
-    style TaskLCD fill:#e6f2ff,stroke:#333,stroke-width:1px
-    style TaskUART fill:#e6f2ff,stroke:#333,stroke-width:1px
+...
 ```
 
 | Task | Stack | Role |
 |---|---|---|
-| **TaskSensor** | 256 words | Reads BME280 every 2 s. Owns all `snprintf` calls. Dispatches to 3 queues. |
-| **TaskLCD** | 128 words | Receives pre-formatted strings and writes them to the LCD display. |
-| **TaskUART** | 192 words | Forwards telemetry to UART. Every 5 s, queries FreeRTOS and prints per-task CPU usage. |
-| **TaskAlarm** | 64 words | Evaluates thresholds, manages the latching alarm state machine, drives LEDs. |
-| **IDLE** | 128 words | FreeRTOS idle task. Consumes ~98% of CPU.|
+| **TaskSensor** | 256 words | Reads the BME280 every 2 seconds, formats telemetry once using `snprintf`, then dispatches data to the three consumer tasks. |
+| **TaskLCD** | 128 words | Receives pre-formatted strings and updates the LCD display. |
+| **TaskUART** | 192 words | Sends telemetry over UART and periodically reports per-task CPU usage. |
+| **TaskAlarm** | 64 words | Evaluates sensor thresholds, manages the latching alarm state machine and drives the LEDs. |
+| **IDLE** | 128 words | FreeRTOS idle task. Typical CPU usage: ~98%. |
 
-### Inter-Task Communication with Queues
+### Thread-Safe Communication
 
-**No global variables are used to pass sensor data between tasks.**
-All data flows through typed FreeRTOS queues, ensuring thread safety and
-decoupling producer from consumers.
+Tasks communicate exclusively through typed FreeRTOS queues. Two payload
+types are exchanged:
+
+- `SensorData_t` — raw sensor measurements consumed by `TaskAlarm`.
+- `FormattedData_t` — pre-formatted telemetry consumed by `TaskLCD` and `TaskUART`.
+
+By centralising all `snprintf()` operations inside `TaskSensor`, consumer
+tasks avoid floating-point formatting, reducing both stack usage and memory
+consumption.
 
 ```c
-/* In main.c - queues created before the scheduler starts */
+/* Queues created before the scheduler starts */
 UartQueueHandle  = xQueueCreate(2, sizeof(FormattedData_t));
 AlarmQueueHandle = xQueueCreate(1, sizeof(SensorData_t));
 LcdQueueHandle   = xQueueCreate(3, sizeof(FormattedData_t));
 ```
 
-Two payload types are used:
+Queue depths were intentionally selected according to each consumer's
+behaviour and timing constraints.
 
-- `SensorData_t` - raw `float` values sent to TaskAlarm for threshold comparison.
-- `FormattedData_t` - pre-formatted strings sent to TaskLCD and TaskUART.
-  By centralising all `snprintf` calls in TaskSensor, consumer tasks need
-  no floating-point library support and their stack requirements are minimised.
+| Queue | Depth | Rationale |
+|---|---:|---|
+| AlarmQueue | 1 | Only the most recent measurement is relevant for alarm evaluation. |
+| UARTQueue | 2 | Absorbs occasional scheduling jitter between producer and consumer. |
+| LCDQueue | 3 | Compensates for additional latency caused by shared I2C bus access. |
 
-**Queue depths are tuned by design:**
+### Shared Resource Protection
 
-| Queue | Depth | Reasoning |
-|---|---|---|
-| AlarmQueueHandle | 1 | Only the latest reading matters for alarm evaluation. |
-| UartQueueHandle | 2 | Absorbs one cycle of jitter between sensor and UART task. |
-| LcdQueueHandle | 3 | Extra depth required to absorb I2C timing jitter caused by mutex contention with TaskSensor on the shared bus. |
-
-### Shared Resource Protection with Mutexes
-
-The BME280 sensor (TaskSensor) and the HD44780 LCD (TaskLCD) both use
-**I2C1** (PB6/PB7). Without synchronisation, concurrent I2C transactions
-from two tasks would corrupt both devices.
-
-A single FreeRTOS mutex (`i2cMutexHandle`) protects all I2C bus access:
+The BME280 sensor and the HD44780 LCD share the same I2C peripheral.
+A FreeRTOS mutex guarantees exclusive access to the bus, preventing
+concurrent transactions from corrupting communications.
 
 ```c
-/* In TaskSensor - acquiring the bus before reading the sensor */
+/* TaskSensor */
 osMutexWait(i2cMutexHandle, osWaitForever);
 bme280_sensor_read(&sensorData);
 osMutexRelease(i2cMutexHandle);
 
-/* In lcd_i2c.c - acquiring the bus before each LCD command */
-static void LCD_SendCommand(uint8_t cmd) {
+/* lcd_i2c.c */
+static void LCD_SendCommand(uint8_t cmd)
+{
     osMutexWait(i2cMutexHandle, osWaitForever);
     LCD_Send(cmd, 0);
     osMutexRelease(i2cMutexHandle);
 }
 ```
 
-The mutex is placed at the `LCD_SendCommand` / `LCD_SendData` level (not
-inside `LCD_WritePointer`) to avoid re-entrant acquisition, which would
-cause a deadlock on a non-recursive mutex.
+The mutex is acquired at the lowest driver level (`LCD_SendCommand()` and
+`LCD_SendData()`) to avoid re-entrant locking and potential deadlocks.
 
-Additionally, TaskSensor delays its first I2C access by 3 seconds to allow
-the LCD to complete its HD44780 power-on reset sequence before the BME280
-driver claims the bus.
+To ensure reliable startup, `TaskSensor` delays its first I2C transaction by
+3 seconds, allowing the HD44780 controller to complete its power-on
+initialisation before the BME280 accesses the shared bus.
 
-### Alarm State Machine
+## Alarm State Machine
 
-TaskAlarm implements a **latching three-state alarm state machine**. Once
-the alarm escalates, it does not automatically recover - an explicit Reset
-command from the dashboard is required.
+`TaskAlarm` implements a three-state latching alarm state machine that
+continuously evaluates sensor measurements received from `TaskSensor`.
+
+Once the **Critical** state is reached, the alarm remains latched until a
+remote **Reset** command is received from the dashboard.
 
 ```mermaid
 graph TD
@@ -255,18 +254,11 @@ graph TD
     style EVAL fill:#fff,stroke:#333,stroke-width:1px,stroke-dasharray: 5 5;
     style EVAL_TXT fill:transparent,stroke:transparent;
 ```
+## Runtime CPU Monitoring
 
-The `current_alarm_state` variable is written by TaskAlarm and read by
-TaskSensor, which embeds it in the UART telemetry string (`A:1/2/3`).
-The Python bridge parses this field and the dashboard mirrors the physical
-LED state in real time.
-
-### CPU Usage Statistics
-
-Every 5 seconds, TaskUART queries FreeRTOS using `uxTaskGetSystemState()`
-and transmits a CPU usage report over UART. The Python bridge parses this
-report and publishes per-task JSON payloads to `senselink/cpu` for display
-on the dashboard.
+Every 5 seconds, `TaskUART` collects per-task CPU usage statistics using
+`uxTaskGetSystemState()`. The report is transmitted over UART, forwarded by
+the Python bridge via MQTT, and displayed on the React dashboard.
 
 ```
 --- CPU USE ---
@@ -276,52 +268,29 @@ IDLE         : 98%
 TaskAlarm    : <1%
 TaskSensor   : <1%
 ---------------
-
 ```
-### PuTTY UART debug output
+
+### PuTTY UART Debug Output
+
 ![PuTTY UART](https://github.com/gienyne/SenseLink-Firmware-FreeRtos/blob/main/Screenshots/Putty.png)
 
-**Important design decision:** `xTaskGetTickCount()` is used as the time
-base (1 ms resolution via SysTick), not a hardware timer. This avoids
-TIM3 overflow issues that caused erroneous 100% readings in early iterations.
-Tasks executing in under 1 ms per cycle are reported as `<1%` to distinguish
-them from tasks that have never been scheduled.
+## Memory Optimisation
 
-The array size is determined at runtime using `uxTaskGetNumberOfTasks()` to
-prevent buffer overflow if the task count changes:
+The firmware was designed for an STM32F030R8 providing only **8 KB of RAM**.
 
-```c
-UBaseType_t uxNbTasks = uxTaskGetNumberOfTasks();
-if (uxNbTasks > 10) uxNbTasks = 10;
-UBaseType_t uxArraySize = uxTaskGetSystemState(pxTaskStatusArray, uxNbTasks, &TotalRunTime);
-```
+Task stack sizes, queue depths and the FreeRTOS heap were carefully tuned to
+fit within the available memory while maintaining stable operation.
 
-### Memory Budget
+> Detailed memory analysis is available in `docs/memory.md`.
 
-The STM32F030R8 has 8 KB of total SRAM. The FreeRTOS heap must coexist
-with the HAL layer, global variables, the system stack and all task stacks.
+## IoT Extension
 
-```
-configTOTAL_HEAP_SIZE = 3972 bytes
+The embedded firmware is extended by a lightweight IoT pipeline that
+provides real-time telemetry visualization and remote interaction.
 
-Task stacks (dynamic, from heap):
-  TaskSensor  256 words = 1024 bytes
-  TaskLCD     128 words =  512 bytes
-  TaskUART    192 words =  768 bytes
-  TaskAlarm    64 words =  256 bytes
-  IDLE        128 words =  512 bytes
-                        ----------
-  Total stacks          = 3072 bytes
-
-Remaining heap for queues, TCBs, mutex: ~900 bytes
-```
-
-Every byte was accounted for. Exceeding the heap caused `osThreadCreate()`
-to return `NULL` silently, diagnosed by toggling LD2 on a null handle check.
-
----
-
-## Full IoT Pipeline
+Sensor data is transmitted over UART to a Python bridge, published to an
+MQTT broker, then displayed by a React dashboard. The dashboard can also
+send remote commands, such as resetting the alarm state.
 
 ```mermaid
 graph TD
@@ -421,72 +390,34 @@ SenseLink_Firmware/
 
 ### Prerequisites
 
-- STM32CubeIDE (firmware build and flash)
-- Python 3.x with pip
-- Node.js 18+ and npm
-- Mosquitto MQTT broker
+- STM32CubeIDE
+- Python 3.x
+- Node.js 18+
+- Mosquitto MQTT Broker
+
 
 ### 1. Flash the Firmware
 
-Open `SenseLink_Firmware` in STM32CubeIDE, build and flash to the Nucleo
-board. The green LED lights up after ~3 seconds (the FreeRTOS startup delay
-that allows the LCD to initialise before the sensor task claims the I2C bus).
+Build and flash the firmware to the STM32 Nucleo-F030R8 using STM32CubeIDE.
 
-### 2. Configure and Start Mosquitto
+### 2. Start the MQTT Broker
 
-Edit `C:\Program Files\mosquitto\mosquitto.conf` as Administrator:
+Start the Mosquitto broker with WebSocket support enabled.
 
-```
-listener 1883
-allow_anonymous true
-
-listener 9001
-protocol websockets
-```
-
-Restart the service and verify:
-
-```powershell
-Restart-Service mosquitto
-netstat -an | findstr "1883 9001"
-```
-
-Both ports should show `LISTENING`.
-
-### 3. Run the Python Bridge
+### 3. Launch the Python Bridge
 
 ```bash
-# Activate the virtual environment (Git Bash)
 cd SenseLink_Bridge
-source venv/Scripts/activate
-
-# Close PuTTY first - it locks COM9
 python bridge.py
 ```
 
-Expected output:
-
-```
-== SenseLink Bridge UART <-> MQTT ==
-Listening on COM9...
-Connected to Mosquitto Broker
-Data -> {"temperature": 27.9, "humidity": 57.9, "pressure": 1001.3, "alarmState": 1, ...}
-CPU [IDLE]: 98%
-CPU [TaskSensor]: 0.5%
-```
-
-### 4. Launch the React Dashboard
+### 4. Start the React Dashboard
 
 ```bash
 cd senselink-dashboard
-npm install        # first time only
+npm install
 npm run dev
 ```
-
-Open `http://localhost:5173`. The sidebar shows **Connected** once MQTT
-data arrives.
-
----
 
 ### Live telemetry — Nominal state
 ![Dashboard Nominal](docs/screenshots/dashboard_nominal.png)
@@ -514,6 +445,10 @@ https://github.com/user-attachments/assets/5a87f34f-4455-497a-9637-b3505b58a1ff
 | LCD display corruption | Increased LCD queue depth from 2 to 3 |
 | CPU stats buffer overflow after removing a task | Runtime `uxTaskGetNumberOfTasks()` guard |
 | CPU stats showing 100% on all tasks | Replaced TIM3 (overflowed every 65 ms) with `xTaskGetTickCount()` |
+
+## Documentation
+
+Detailed implementation notes will be available in the `docs/` directory.
 
 ## Author
 
