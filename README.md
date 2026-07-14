@@ -158,123 +158,41 @@ graph TD
 
 ### Thread-Safe Communication
 
-Tasks communicate exclusively through typed FreeRTOS queues. Two payload
-types are exchanged:
+Tasks communicate exclusively through typed FreeRTOS queues, eliminating
+global-variable based data sharing and ensuring thread-safe communication.
 
-- `SensorData_t` — raw sensor measurements consumed by `TaskAlarm`.
-- `FormattedData_t` — pre-formatted telemetry consumed by `TaskLCD` and `TaskUART`.
-
-By centralising all `snprintf()` operations inside `TaskSensor`, consumer
-tasks avoid floating-point formatting, reducing both stack usage and memory
-consumption.
-
-```c
-/* Queues created before the scheduler starts */
-UartQueueHandle  = xQueueCreate(2, sizeof(FormattedData_t));
-AlarmQueueHandle = xQueueCreate(1, sizeof(SensorData_t));
-LcdQueueHandle   = xQueueCreate(3, sizeof(FormattedData_t));
-```
-
-Queue depths were intentionally selected according to each consumer's
-behaviour and timing constraints.
-
-| Queue | Depth | Rationale |
-|---|---:|---|
-| AlarmQueue | 1 | Only the most recent measurement is relevant for alarm evaluation. |
-| UARTQueue | 2 | Absorbs occasional scheduling jitter between producer and consumer. |
-| LCDQueue | 3 | Compensates for additional latency caused by shared I2C bus access. |
+> Detailed queue implementation is documented in `docs/freertos.md`.
 
 ### Shared Resource Protection
 
 The BME280 sensor and the HD44780 LCD share the same I2C peripheral.
 A FreeRTOS mutex guarantees exclusive access to the bus, preventing
-concurrent transactions from corrupting communications.
+concurrent transactions and ensuring reliable communication.
 
-```c
-/* TaskSensor */
-osMutexWait(i2cMutexHandle, osWaitForever);
-bme280_sensor_read(&sensorData);
-osMutexRelease(i2cMutexHandle);
-
-/* lcd_i2c.c */
-static void LCD_SendCommand(uint8_t cmd)
-{
-    osMutexWait(i2cMutexHandle, osWaitForever);
-    LCD_Send(cmd, 0);
-    osMutexRelease(i2cMutexHandle);
-}
-```
-
-The mutex is acquired at the lowest driver level (`LCD_SendCommand()` and
-`LCD_SendData()`) to avoid re-entrant locking and potential deadlocks.
-
-To ensure reliable startup, `TaskSensor` delays its first I2C transaction by
-3 seconds, allowing the HD44780 controller to complete its power-on
-initialisation before the BME280 accesses the shared bus.
+> Detailed mutex implementation is documented in `docs/freertos.md`.
 
 ## Alarm State Machine
 
-`TaskAlarm` implements a three-state latching alarm state machine that
-continuously evaluates sensor measurements received from `TaskSensor`.
+`TaskAlarm` implements a three-state latching alarm state machine:
 
-Once the **Critical** state is reached, the alarm remains latched until a
-remote **Reset** command is received from the dashboard.
+- **Nominal**
+- **Warning**
+- **Critical (latched until reset)**
 
-```mermaid
-graph TD
-    classDef nominal fill:#edf7ed,stroke:#1e4620,stroke-width:2px,rx:8px,ry:8px;
-    classDef warning fill:#fff8e1,stroke:#b28900,stroke-width:2px,rx:8px,ry:8px;
-    classDef critical fill:#fdeded,stroke:#5f1414,stroke-width:2px,rx:8px,ry:8px;
-    classDef subNominal fill:#edf7ed,stroke:#1e4620,stroke-width:1px,rx:6px,ry:6px;
-    classDef subWarning fill:#fff8e1,stroke:#b28900,stroke-width:1px,rx:6px,ry:6px;
-    classDef subCritical fill:#fdeded,stroke:#5f1414,stroke-width:1px,rx:6px,ry:6px;
-    classDef action fill:#fff,stroke:#fff,stroke-width:0px;
+The alarm logic is fully isolated inside its own FreeRTOS task, making it
+independent from sensor acquisition and user interface updates.
 
-    S1["<b>STATE 1: NOMINAL</b><hr/> Green LED ON"]:::nominal
-    S2["<b>STATE 2: WARNING</b><hr/> Yellow LED ON"]:::warning
-    S3["<b>STATE 3: CRITICAL (LATCHED)</b><hr/> Red LED BLINKING<br/>Alarm Latched"]:::critical
+> Detailed state transitions are documented in `docs/freertos.md`.
 
-    S1 -->|T > 30°C<br/>OR H > 55%| S2
-    S2 -->|T > 30°C<br/>AND H > 55%| S3
-    S3 -->|RESET command received| EVAL_TXT
-
-    subgraph EVAL ["EVALUATE CURRENT SENSOR VALUES"]
-        EVAL_TXT[" "]:::action
-        
-        COND_CRIT["<b>T > 30°C<br/>AND H > 55%</b><hr/>Both thresholds<br/>still exceeded"]:::subCritical
-        
-        COND_WARN["<b>(T > 30°C AND H <= 55%)<br/>OR<br/>(T <= 30°C AND H > 55%)</b><hr/>Only one threshold<br/>exceeded"]:::subWarning
-        
-        COND_NOM["<b>T <= 30°C<br/>AND H <= 55%</b><hr/>Both thresholds<br/>now cleared"]:::subNominal
-    end
-
-    EVAL_TXT --> COND_CRIT
-    EVAL_TXT --> COND_WARN
-    EVAL_TXT --> COND_NOM
-
-    ACT_RE["Re-trigger"]:::action
-    ACT_FALL["Fallback"]:::action
-    ACT_SUCC["Success"]:::action
-
-    COND_CRIT --> ACT_RE
-    COND_WARN --> ACT_FALL
-    COND_NOM --> ACT_SUCC
-
-    ACT_RE --> S3
-    ACT_FALL --> S2
-    ACT_SUCC --> S1
-
-    S2 -->|T <= 30°C<br/>AND H <= 55%| S1
-
-    ACT_RE ----> ACT_FALL ----> ACT_SUCC
-    style EVAL fill:#fff,stroke:#333,stroke-width:1px,stroke-dasharray: 5 5;
-    style EVAL_TXT fill:transparent,stroke:transparent;
-```
 ## Runtime CPU Monitoring
 
-Every 5 seconds, `TaskUART` collects per-task CPU usage statistics using
-`uxTaskGetSystemState()`. The report is transmitted over UART, forwarded by
-the Python bridge via MQTT, and displayed on the React dashboard.
+`TaskUART` periodically collects FreeRTOS runtime statistics using
+`uxTaskGetSystemState()` and transmits the results over UART.
+
+The Python bridge forwards these statistics via MQTT, allowing the React
+dashboard to display per-task CPU usage in real time.
+
+### Example UART Output
 
 ```
 --- CPU USE ---
@@ -285,28 +203,30 @@ TaskAlarm    : <1%
 TaskSensor   : <1%
 ---------------
 ```
-
 ### PuTTY UART Debug Output
 
 ![PuTTY UART](https://github.com/gienyne/SenseLink-Firmware-FreeRtos/blob/main/Screenshots/Putty.png)
 
 ## Memory Optimisation
 
-The firmware was designed for an STM32F030R8 providing only **8 KB of RAM**.
+One of the main engineering constraints of this project was running a
+multitasking FreeRTOS application on a microcontroller with only **8 KB of RAM**.
 
-Task stack sizes, queue depths and the FreeRTOS heap were carefully tuned to
-fit within the available memory while maintaining stable operation.
+Task stack sizes, queue depths and heap allocation were carefully optimised
+to ensure stable operation within the available memory budget.
 
-> Detailed memory analysis is available in `docs/memory.md`.
+> Detailed memory analysis is documented in `docs/memory.md`.
 
 ## IoT Extension
 
-The embedded firmware is extended by a lightweight IoT pipeline that
-provides real-time telemetry visualization and remote interaction.
+Although the primary objective of this project was to design a robust
+FreeRTOS application, the firmware was extended into a complete IoT
+monitoring system.
 
-Sensor data is transmitted over UART to a Python bridge, published to an
-MQTT broker, then displayed by a React dashboard. The dashboard can also
-send remote commands, such as resetting the alarm state.
+A lightweight Python bridge forwards telemetry from the STM32 over UART to
+an MQTT broker, allowing a React dashboard to display live sensor data,
+system status and FreeRTOS runtime statistics. The dashboard can also send
+commands back to the firmware, including remote alarm reset.
 
 ```mermaid
 graph TD
@@ -435,15 +355,18 @@ npm install
 npm run dev
 ```
 
-### Live telemetry — Nominal state
+## Expected Result
+
+### Nominal state
 ![Dashboard Nominal](docs/screenshots/dashboard_nominal.png)
 
-### Live telemetry — Warning state
+### Warning state
 ![Dashboard Warning](https://github.com/gienyne/SenseLink-Firmware-FreeRtos/blob/main/Screenshots/S_%C3%9Cbersicht1.png)
 
-### Live telemetry — Critical state
+### Critical state
 ![Dashboard Critical](https://github.com/gienyne/SenseLink-Firmware-FreeRtos/blob/main/Screenshots/S_%C3%9Cbersicht2.png)
 
+### Demonstration Video
 
 https://github.com/user-attachments/assets/5a87f34f-4455-497a-9637-b3505b58a1ff
 
