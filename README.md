@@ -161,7 +161,7 @@ graph TD
 Tasks communicate exclusively through typed FreeRTOS queues, eliminating
 global-variable based data sharing and ensuring thread-safe communication.
 
-> Detailed queue implementation is documented in `docs/freertos.md`.
+> Detailed queue implementation is documented in **[`docs/architecture.md`](docs/freeRtos)**.
 
 ### Shared Resource Protection
 
@@ -182,7 +182,7 @@ concurrent transactions and ensuring reliable communication.
 The alarm logic is fully isolated inside its own FreeRTOS task, making it
 independent from sensor acquisition and user interface updates.
 
-> Detailed state transitions are documented in `docs/freertos.md`.
+> Detailed state transitions are documented in **[`docs/architecture.md`](docs/freeRtos)**.
 
 ## Runtime CPU Monitoring
 
@@ -215,69 +215,16 @@ multitasking FreeRTOS application on a microcontroller with only **8 KB of RAM**
 Task stack sizes, queue depths and heap allocation were carefully optimised
 to ensure stable operation within the available memory budget.
 
-> Detailed memory analysis is documented in `docs/memory.md`.
+> Detailed memory analysis is documented in **[`docs/architecture.md`](docs/memory.md)**.
 
 ## IoT Extension
 
-Although the primary objective of this project was to design a robust
-FreeRTOS application, the firmware was extended into a complete IoT
-monitoring system.
+Although the primary focus of this project was the design of a robust FreeRTOS application, the firmware was integrated into a complete end-to-end IoT monitoring system.
 
-A lightweight Python bridge forwards telemetry from the STM32 over UART to
-an MQTT broker, allowing a React dashboard to display live sensor data,
-system status and FreeRTOS runtime statistics. The dashboard can also send
-commands back to the firmware, including remote alarm reset.
+A Python gateway bridges UART communication with MQTT, enabling a React dashboard to display live telemetry, FreeRTOS runtime statistics and remotely reset the alarm.
 
-```mermaid
-graph TD
-    %% Configuration des styles pour différencier les couches du projet
-    classDef HW fill:#f4f4f4,stroke:#333,stroke-width:2px;
-    classDef OS fill:#e3f2fd,stroke:#0d47a1,stroke-width:2px;
-    classDef SW fill:#fff3e0,stroke:#e65100,stroke-width:2px;
-    classDef NET fill:#ede7f6,stroke:#4a148c,stroke-width:2px;
+The complete system architecture and communication pipeline are documented in **[`docs/architecture.md`](docs/architecture.md)**.
 
-    %% --- COUCHE EMBARQUÉE (STM32 & FreeRTOS) ---
-    BME["BME280 Sensor"]:::HW
-    TS["TaskSensor<br/>(FreeRTOS)"]:::OS
-    
-    Q_Alarm[("AlarmQueueHandle")]:::OS
-    Q_Lcd[("LcdQueueHandle")]:::OS
-    Q_Uart[("UartQueueHandle")]:::OS
-    
-    TA["TaskAlarm"]:::OS
-    TL["TaskLCD"]:::OS
-    TU["TaskUART"]:::OS
-    
-    LEDs["Physical LEDs<br/>(PA8, PA9, PB5)"]:::HW
-    LCD["16x2 LCD Display"]:::HW
-    UART2["USART2<br/>(38400 baud)"]:::HW
-
-    %% Liens Couche Embarquée
-    BME -->|I2C Mutex Protected| TS
-    TS --> Q_Alarm --> TA --> LEDs
-    TS --> Q_Lcd --> TL --> LCD
-    TS --> Q_Uart --> TU --> UART2
-
-    %% --- COUCHE PASSERELLE & CRYPTE MQTT ---
-    PY["bridge.py (Python)<br/>pyserial + paho-mqtt"]:::SW
-    Broker["Mosquitto Broker<br/>(localhost:1883/9001)"]:::NET
-
-    UART2 <-->|USB / Virtual COM| PY
-    PY -->|"Publish: senselink/data & senselink/cpu"| Broker
-
-    %% --- COUCHE IHM (React Dashboard) ---
-    Dashboard["React Dashboard (WebSockets)<br/>Gauges · Chart · LED panel · CPU"]:::SW
-    Broker <-->|WebSockets| Dashboard
-
-    %% --- PIPELINE DE RETOUR (RESET COMMAND) ---
-    ISR["STM32 UART ISR<br/>HAL_UART_RxCpltCallback"]:::OS
-    
-    Dashboard -.->|"Click Reset Alarm Button (senselink/cmd)"| Broker
-    Broker -.-> PY
-    PY -.->|"ser.write(b'R')"| ISR
-    ISR -.->|reset_request = 1| TA
-
-```
 
 ## Project Structure
 
