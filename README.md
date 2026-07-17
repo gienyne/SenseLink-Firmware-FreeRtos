@@ -58,49 +58,25 @@ The complete embedded architecture, task design and communication flow are docum
 
 ### End-to-End Pipeline
 
+
 ```mermaid
 graph TD
-    classDef HW fill:#f4f4f4,stroke:#333,stroke-width:2px;
-    classDef OS fill:#e3f2fd,stroke:#0d47a1,stroke-width:2px;
-    classDef SW fill:#fff3e0,stroke:#e65100,stroke-width:2px;
-    classDef NET fill:#ede7f6,stroke:#4a148c,stroke-width:2px;
+    %% Nodes
+    TaskSensor["TaskSensor (256 words)<br/>• Reads BME280 via I2C<br/>• Centralized snprintf"]
+    TaskAlarm["TaskAlarm (64 words)<br/>• State Machine<br/>• Drives LEDs"]
+    TaskLCD["TaskLCD (128 words)<br/>• Writes LCD via I2C"]
+    TaskUART["TaskUART (192 words)<br/>• Sends Telemetry<br/>• Reports CPU %"]
 
-    BME["BME280 Sensor"]:::HW
-    TS["TaskSensor<br/>(FreeRTOS)"]:::OS
-    
-    Q_Alarm[("AlarmQueueHandle")]:::OS
-    Q_Lcd[("LcdQueueHandle")]:::OS
-    Q_Uart[("UartQueueHandle")]:::OS
-    
-    TA["TaskAlarm"]:::OS
-    TL["TaskLCD"]:::OS
-    TU["TaskUART"]:::OS
-    
-    LEDs["Physical LEDs<br/>(PA8, PA9, PB5)"]:::HW
-    LCD["16x2 LCD Display"]:::HW
-    UART2["USART2<br/>(38400 baud)"]:::HW
+    %% Queues
+    TaskSensor -->|AlarmQueue<br/>1 x struct| TaskAlarm
+    TaskSensor -->|LcdQueue<br/>3 x str| TaskLCD
+    TaskSensor -->|UartQueue<br/>2 x str| TaskUART
 
-    BME -->|I2C Mutex Protected| TS
-    TS --> Q_Alarm --> TA --> LEDs
-    TS --> Q_Lcd --> TL --> LCD
-    TS --> Q_Uart --> TU --> UART2
-
-    PY["bridge.py (Python)<br/>pyserial + paho-mqtt"]:::SW
-    Broker["Mosquitto Broker<br/>(localhost:1883/9001)"]:::NET
-
-    UART2 <-->|USB / Virtual COM| PY
-    PY -->|"Publish: senselink/data & senselink/cpu"| Broker
-
-    Dashboard["React Dashboard (WebSockets)<br/>Gauges · Chart · LED panel · CPU"]:::SW
-    Broker <-->|WebSockets| Dashboard
-
-    %% --- PIPELINE DE RETOUR (RESET COMMAND) ---
-    ISR["STM32 UART ISR<br/>HAL_UART_RxCpltCallback"]:::OS
-    
-    Dashboard -.->|"Click Reset Alarm Button (senselink/cmd)"| Broker
-    Broker -.-> PY
-    PY -.->|"ser.write(b'R')"| ISR
-    ISR -.->|reset_request = 1| TA
+    %% Styling
+    style TaskSensor fill:#f4f4f4,stroke:#333,stroke-width:2px
+    style TaskAlarm fill:#e6f2ff,stroke:#333,stroke-width:1px
+    style TaskLCD fill:#e6f2ff,stroke:#333,stroke-width:1px
+    style TaskUART fill:#e6f2ff,stroke:#333,stroke-width:1px
 ```
 ---
 
