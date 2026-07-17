@@ -101,7 +101,7 @@ graph TD
     Broker -.-> PY
     PY -.->|"ser.write(b'R')"| ISR
     ISR -.->|reset_request = 1| TA
-
+```
 ---
 
 ## Memory Optimization
