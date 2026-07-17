@@ -1,6 +1,6 @@
 # SenseLink Firmware
 
-> A FreeRTOS-based environmental monitoring system for STM32 featuring deterministic multitasking, custom embedded drivers and a complete IoT telemetry pipeline.
+> A **FreeRTOS-based embedded firmware** for the STM32 Nucleo-F030R8 demonstrating deterministic multitasking, inter-task communication and memory optimization on an **8 KB Cortex-M0**, extended with a lightweight IoT monitoring pipeline.
 
 ![Platform](https://img.shields.io/badge/Platform-STM32-blue)
 ![RTOS](https://img.shields.io/badge/RTOS-FreeRTOS-green)
@@ -11,27 +11,24 @@
 
 ## Overview
 
-SenseLink is a real-time embedded application developed for the **STM32 Nucleo-F030R8** using **FreeRTOS**.
+SenseLink is an embedded systems project designed to demonstrate practical **FreeRTOS software engineering** on a resource-constrained microcontroller.
 
-The project demonstrates how to build a deterministic multitasking firmware on a resource-constrained microcontroller (**48 MHz Cortex-M0, 8 KB SRAM**) while extending it with a complete IoT monitoring pipeline.
+Running on an **STM32 Nucleo-F030R8 (48 MHz Cortex-M0, 8 KB SRAM)**, the firmware decomposes the application into independent real-time tasks responsible for sensor acquisition, alarm management, LCD updates and UART communication. Inter-task communication is handled exclusively through FreeRTOS queues, while shared peripherals are protected using mutexes to guarantee deterministic behaviour.
 
-The firmware periodically reads environmental data from a Bosch BME280 sensor, distributes measurements through FreeRTOS queues, updates a local LCD, manages an alarm state machine and streams telemetry over UART.
-
-A lightweight Python gateway forwards telemetry to an MQTT broker, allowing a React dashboard to visualize the system in real time and remotely acknowledge alarms.
+To make the embedded system observable in real time, the firmware is extended with a lightweight Python UART-to-MQTT gateway and a React dashboard that visualizes sensor telemetry, alarm status and runtime statistics.
 
 ---
 
-## Features
+## Technical Highlights
 
-- FreeRTOS multitasking architecture
-- Thread-safe communication using queues and mutexes
-- Custom HD44780 LCD driver over PCF8574 (I²C)
-- Bosch BME280 environmental monitoring
-- UART telemetry with runtime CPU statistics
-- Python UART ↔ MQTT bridge
-- React monitoring dashboard
-- Remote alarm reset
-- Optimized memory usage for an STM32 with only **8 KB SRAM**
+- **FreeRTOS-first architecture** with independent concurrent tasks
+- **Queue-based communication** without shared global data
+- **Mutex-protected I²C bus** for safe peripheral access
+- **Custom HD44780 LCD driver** over a PCF8574 I²C expander
+- **Memory optimization** for an MCU with only **8 KB SRAM**
+- **Runtime CPU monitoring** using native FreeRTOS APIs
+- **UART ↔ MQTT gateway** for live telemetry
+- **React dashboard** for visualization and remote alarm reset
 
 ---
 
@@ -39,7 +36,7 @@ A lightweight Python gateway forwards telemetry to an MQTT broker, allowing a Re
 
 | Component | Description |
 |------------|-------------|
-| MCU | STM32 Nucleo-F030R8 (Cortex-M0, 48 MHz, 8 KB SRAM) |
+| MCU | STM32 Nucleo-F030R8 (Cortex-M0 @ 48 MHz, 8 KB SRAM) |
 | Sensor | Bosch BME280 |
 | Display | HD44780 LCD + PCF8574 I²C expander |
 | LEDs | Green, Yellow and Red status indicators |
@@ -49,49 +46,38 @@ A lightweight Python gateway forwards telemetry to an MQTT broker, allowing a Re
 
 ## System Overview
 
-The firmware is built around four independent FreeRTOS tasks communicating through typed queues while shared peripherals are protected using mutexes.
+The firmware follows a modular multitasking architecture where each subsystem has a single responsibility.
 
-The complete embedded architecture, task design and communication flow are documented in:
+Sensor acquisition, alarm evaluation, LCD updates and UART telemetry execute concurrently as independent FreeRTOS tasks. The embedded firmware is extended by a Python gateway that forwards telemetry to an MQTT broker, enabling real-time visualization from a React dashboard.
 
-- 📄 **docs/freertos.md**
-- 📄 **docs/architecture.md**
-
-### End-to-End Pipeline
-
+### Firmware Task Overview
 
 ```mermaid
 graph TD
-    %% Nodes
-    TaskSensor["TaskSensor (256 words)<br/>• Reads BME280 via I2C<br/>• Centralized snprintf"]
-    TaskAlarm["TaskAlarm (64 words)<br/>• State Machine<br/>• Drives LEDs"]
-    TaskLCD["TaskLCD (128 words)<br/>• Writes LCD via I2C"]
-    TaskUART["TaskUART (192 words)<br/>• Sends Telemetry<br/>• Reports CPU %"]
+    TaskSensor["TaskSensor"]
+    TaskAlarm["TaskAlarm"]
+    TaskLCD["TaskLCD"]
+    TaskUART["TaskUART"]
 
-    %% Queues
-    TaskSensor -->|AlarmQueue<br/>1 x struct| TaskAlarm
-    TaskSensor -->|LcdQueue<br/>3 x str| TaskLCD
-    TaskSensor -->|UartQueue<br/>2 x str| TaskUART
-
-    %% Styling
-    style TaskSensor fill:#f4f4f4,stroke:#333,stroke-width:2px
-    style TaskAlarm fill:#e6f2ff,stroke:#333,stroke-width:1px
-    style TaskLCD fill:#e6f2ff,stroke:#333,stroke-width:1px
-    style TaskUART fill:#e6f2ff,stroke:#333,stroke-width:1px
+    TaskSensor -->|Alarm Queue| TaskAlarm
+    TaskSensor -->|LCD Queue| TaskLCD
+    TaskSensor -->|UART Queue| TaskUART
 ```
+
+For implementation details, see the technical documentation below.
+
 ---
 
-## Memory Optimization
+## Technical Documentation
 
-Running FreeRTOS on a microcontroller with only **8 KB of SRAM** required careful tuning of:
+Detailed implementation notes are available in the **docs/** directory.
 
-- task stack sizes
-- queue depths
-- heap allocation
-- runtime memory usage
-
-A complete analysis of the memory budget and optimisation strategy is available in:
-
-📄 **docs/memory.md**
+| Document | Description |
+|----------|-------------|
+| 📄 **[FreeRTOS Architecture](docs/freertos.md)** | Task responsibilities, queues, mutexes, scheduler design, runtime monitoring and engineering decisions. |
+| 📄 **[System Architecture](docs/architecture.md)** | Complete end-to-end architecture from the STM32 firmware to the MQTT broker and React dashboard. |
+| 📄 **[Memory Optimization](docs/memory.md)** | Heap allocation, task stack sizing, queue optimisation and SRAM budgeting. |
+| 📄 **[Setup Guide](docs/setup.md)** | Build environment and project setup instructions. |
 
 ---
 
@@ -101,9 +87,17 @@ A complete analysis of the memory budget and optimisation strategy is available 
 SenseLink_Firmware/
 │
 ├── Core/
+│
 ├── docs/
+│   ├── architecture.md
+│   ├── freertos.md
+│   ├── memory.md
+│   └── setup.md
+│
 ├── SenseLink_Bridge/
+│
 ├── senselink-dashboard/
+│
 └── README.md
 ```
 
@@ -118,18 +112,18 @@ SenseLink_Firmware/
 - Node.js
 - Mosquitto MQTT Broker
 
-### Flash the firmware
+### 1. Flash the firmware
 
-Compile and flash the firmware using STM32CubeIDE.
+Build and flash the project using **STM32CubeIDE**.
 
-### Start the bridge
+### 2. Start the UART ↔ MQTT bridge
 
 ```bash
 cd SenseLink_Bridge
 python bridge.py
 ```
 
-### Start the dashboard
+### 3. Launch the dashboard
 
 ```bash
 cd senselink-dashboard
@@ -140,6 +134,16 @@ npm run dev
 ---
 
 ## Dashboard
+
+The web interface provides real-time insight into the embedded system.
+
+Features include:
+
+- Live environmental measurements
+- Alarm status visualization
+- Runtime CPU usage
+- Historical sensor charts
+- Remote alarm acknowledgement
 
 ### Nominal
 
@@ -153,7 +157,7 @@ npm run dev
 
 ![Critical](Screenshots/S_Übersicht2.png)
 
-### UART Debug Output
+### UART Runtime Diagnostics
 
 ![UART](Screenshots/Putty.png)
 
@@ -161,13 +165,13 @@ npm run dev
 
 ## Engineering Challenges
 
-| Challenge | Solution |
-|------------|----------|
-| Shared I²C bus contention | FreeRTOS mutex |
-| Recursive mutex deadlock | Driver-level locking |
-| SRAM limitations | Stack tuning and centralized formatting |
-| LCD update latency | Queue sizing optimisation |
-| Runtime profiling | FreeRTOS runtime statistics |
+| Challenge | Engineering Solution |
+|------------|----------------------|
+| Shared I²C peripheral contention | Protected all transactions with a FreeRTOS mutex |
+| Recursive mutex deadlocks | Restricted mutex ownership to the LCD driver layer |
+| Limited SRAM (8 KB) | Optimized stack sizes, queue depths and heap usage |
+| LCD update latency | Tuned queue sizing to absorb temporary I²C contention |
+| Runtime profiling | Implemented FreeRTOS runtime statistics using native APIs |
 
 ---
 
