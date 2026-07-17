@@ -77,7 +77,6 @@ Detailed implementation notes are available in the **docs/** directory.
 | 📄 **[FreeRTOS Architecture](docs/freertos.md)** | Task responsibilities, queues, mutexes, scheduler design, runtime monitoring and engineering decisions. |
 | 📄 **[System Architecture](docs/architecture.md)** | Complete end-to-end architecture from the STM32 firmware to the MQTT broker and React dashboard. |
 | 📄 **[Memory Optimization](docs/memory.md)** | Heap allocation, task stack sizing, queue optimisation and SRAM budgeting. |
-| 📄 **[Setup Guide](docs/setup.md)** | Build environment and project setup instructions. |
 
 ---
 
