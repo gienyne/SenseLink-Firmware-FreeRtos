@@ -1,11 +1,11 @@
-# SenseLink Firmware
-
-> A **FreeRTOS-based embedded firmware** for the STM32 Nucleo-F030R8 demonstrating deterministic multitasking, inter-task communication and memory optimization on an **8 KB Cortex-M0**, extended with a lightweight IoT monitoring pipeline.
-
 ![Platform](https://img.shields.io/badge/Platform-STM32-blue)
 ![RTOS](https://img.shields.io/badge/RTOS-FreeRTOS-green)
 ![Language](https://img.shields.io/badge/Language-C-orange)
 ![Dashboard](https://img.shields.io/badge/Frontend-React-61DAFB)
+
+# SenseLink Firmware
+
+> A **FreeRTOS-based embedded firmware** for the STM32 Nucleo-F030R8 demonstrating deterministic multitasking, inter-task communication and memory optimization on an **8 KB Cortex-M0**, extended with a lightweight IoT monitoring pipeline.
 
 ---
 
