@@ -103,45 +103,63 @@ It also allows the user to remotely reset the alarm.
 
 ---
 
-# Data Flow
+# End-to-End System Architecture
 
-The complete telemetry path is:
+The following diagram illustrates the complete SenseLink architecture,
+from sensor acquisition on the STM32 to real-time visualization on the
+dashboard, including the return path used to remotely reset the alarm.
 
-```text
-BME280
-   ↓
-TaskSensor
-   ↓
-FreeRTOS Queues
-   ↓
-TaskUART
-   ↓
-USART2
-   ↓
-Python Bridge
-   ↓
-Mosquitto MQTT
-   ↓
-React Dashboard
+```mermaid
+graph TD
+    %% Configuration des styles pour différencier les couches du projet
+    classDef HW fill:#f4f4f4,stroke:#333,stroke-width:2px;
+    classDef OS fill:#e3f2fd,stroke:#0d47a1,stroke-width:2px;
+    classDef SW fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+    classDef NET fill:#ede7f6,stroke:#4a148c,stroke-width:2px;
+
+    %% --- COUCHE EMBARQUÉE (STM32 & FreeRTOS) ---
+    BME["BME280 Sensor"]:::HW
+    TS["TaskSensor<br/>(FreeRTOS)"]:::OS
+    
+    Q_Alarm[("AlarmQueueHandle")]:::OS
+    Q_Lcd[("LcdQueueHandle")]:::OS
+    Q_Uart[("UartQueueHandle")]:::OS
+    
+    TA["TaskAlarm"]:::OS
+    TL["TaskLCD"]:::OS
+    TU["TaskUART"]:::OS
+    
+    LEDs["Physical LEDs<br/>(PA8, PA9, PB5)"]:::HW
+    LCD["16x2 LCD Display"]:::HW
+    UART2["USART2<br/>(38400 baud)"]:::HW
+
+    %% Liens Couche Embarquée
+    BME -->|I2C Mutex Protected| TS
+    TS --> Q_Alarm --> TA --> LEDs
+    TS --> Q_Lcd --> TL --> LCD
+    TS --> Q_Uart --> TU --> UART2
+
+    %% --- COUCHE PASSERELLE & CRYPTE MQTT ---
+    PY["bridge.py (Python)<br/>pyserial + paho-mqtt"]:::SW
+    Broker["Mosquitto Broker<br/>(localhost:1883/9001)"]:::NET
+
+    UART2 <-->|USB / Virtual COM| PY
+    PY -->|"Publish: senselink/data & senselink/cpu"| Broker
+
+    %% --- COUCHE IHM (React Dashboard) ---
+    Dashboard["React Dashboard (WebSockets)<br/>Gauges · Chart · LED panel · CPU"]:::SW
+    Broker <-->|WebSockets| Dashboard
+
+    %% --- PIPELINE DE RETOUR (RESET COMMAND) ---
+    ISR["STM32 UART ISR<br/>HAL_UART_RxCpltCallback"]:::OS
+    
+    Dashboard -.->|"Click Reset Alarm Button (senselink/cmd)"| Broker
+    Broker -.-> PY
+    PY -.->|"ser.write(b'R')"| ISR
+    ISR -.->|reset_request = 1| TA
+
 ```
 
-Remote commands follow the opposite direction:
-
-```text
-React Dashboard
-      ↓
-MQTT
-      ↓
-Python Bridge
-      ↓
-USART2
-      ↓
-UART Interrupt
-      ↓
-TaskAlarm
-```
-
----
 
 # Design Principles
 
